@@ -330,24 +330,26 @@ export default function DataVisualizationAndEngineering() {
   };
 
   const runBatchProfiling = async () => {
-    if (selectedColumns.length === 0) {
-      setError("Please select at least one column");
-      return;
-    }
-    if (selectedBatchNos.length === 0) {
-      setError("Please select at least one batch");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    setPlotData(null);
-    try {
+  if (selectedColumns.length === 0) {
+    setError("Please select at least one column");
+    return;
+  }
+  if (selectedBatchNos.length === 0) {
+    setError("Please select at least one batch");
+    return;
+  }
+
+  setError("");
+  setLoading(true);
+  setPlotData(null);
+
+  try {
     const payload = {
       columns: selectedColumns,
       batch_numbers: selectedBatchNos,
     };
 
-    const response = await fetch(`${BACKEND_URL}/run_batch_profiles`, {
+    const response = await fetch(`${BACKEND_URL}/batch/run_batch_profiles`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -359,11 +361,18 @@ export default function DataVisualizationAndEngineering() {
 
     const result = await response.json();
 
+    // Backend format:
+    // {
+    //   pages: [
+    //     { batch: "...", type: "plot", data: {...} },
+    //     { batch: "...", type: "plot", data: {...} }
+    //   ]
+    // }
+
     if (result.pages && Array.isArray(result.pages)) {
-      // pages contain: [{ batch: , image: base64 }, {...}]
       setPlotData(result.pages);
     } else {
-      setError("Unexpected response from server.");
+      setError("Unexpected response structure from server.");
     }
 
   } catch (err) {
@@ -373,6 +382,7 @@ export default function DataVisualizationAndEngineering() {
     setLoading(false);
   }
 };
+
 
 
   // Missing Value Analysis handlers
@@ -1444,27 +1454,22 @@ export default function DataVisualizationAndEngineering() {
         {loading && <CircularProgress />}
         {error && <Alert severity="error">{error}</Alert>}
 
-        {plotData ? (
-          <Plot
-            data={plotData.data}
-            layout={{
-              ...plotData.layout,
-              autosize: true,
-              paper_bgcolor: theme.palette.background.paper,
-              plot_bgcolor: theme.palette.background.default,
-              margin: { t: 40, b: 40, l: 40, r: 40 },
-            }}
-            style={{ width: "100%", height: "100%", minHeight: 400, minWidth: 400 }}
-            useResizeHandler
-          />
-        ) : (
-          !loading &&
-          !error && (
-            <Typography variant="body2" color="text.secondary">
-              No analysis results yet.
-            </Typography>
-          )
-        )}
+        {plotData && plotData.map((page, idx) => (
+  <div key={idx} style={{ marginBottom: "32px" }}>
+    {(page.batch || page.column) && (
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        {page.batch ? `Batch ${page.batch}` : `Column ${page.column}`}
+      </Typography>
+    )}
+
+    <Plot
+      data={page.data.data}
+      layout={page.data.layout}
+      config={{ responsive: true }}
+      style={{ width: "100%", height: "100%" }}
+    />
+  </div>
+))}
 
 
       {/* Post-Treatment Prompt Dialog */}
