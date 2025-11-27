@@ -789,7 +789,7 @@ export default function DataVisualizationAndEngineering() {
                         size="small"
                       />
                     }
-                    label={col}
+                    label={"Select Variable"}
                     sx={{ fontSize: "0.85rem" }}
                   />
                 ))}
@@ -805,7 +805,7 @@ export default function DataVisualizationAndEngineering() {
                         size="small"
                       />
                     }
-                    label={batchno}
+                    label={"Select Batch Numbers"}
                     sx={{ fontSize: "0.85rem" }}
                   />
                 ))}
