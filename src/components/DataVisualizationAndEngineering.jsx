@@ -349,7 +349,7 @@ export default function DataVisualizationAndEngineering() {
       batch_numbers: selectedBatchNos,
     };
 
-    const response = await fetch(`${BACKEND_URL}/batch/run_batch_profiles`, {
+    const response = await fetch(`${BACKEND_URL}/run_batch_profiles`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
