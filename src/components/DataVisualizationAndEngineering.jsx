@@ -32,7 +32,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTheme } from "@mui/material/styles";
 
-const BACKEND_URL = "https://manufacturing-copilot-backend.onrender.com";
+const BACKEND_URL = "https://manufacturing-copilot-backend-batch.onrender.com";
 
 export default function DataVisualizationAndEngineering() {
   //const { uploadedFile } = useContext(AppContext);
