@@ -778,38 +778,91 @@ export default function DataVisualizationAndEngineering() {
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <FormGroup>
-                {columns.map((col) => (
-                  <FormControlLabel
-                    key={col}
-                    control={
-                      <Checkbox
-                        checked={selectedColumns.includes(col)}
-                        onChange={() => handleCheckboxChange(col)}
-                        size="small"
-                      />
-                    }
-                    label={"Select Variable"}
-                    sx={{ fontSize: "0.85rem" }}
-                  />
-                ))}
-              </FormGroup>
-              <FormGroup>
-                {batchNos.map((batchno) => (
-                  <FormControlLabel
-                    key={batchno}
-                    control={
-                      <Checkbox
-                        checked={selectedBatchNos.includes(batchno)}
-                        onChange={() => handleCheckboxChange(batchno)}
-                        size="small"
-                      />
-                    }
-                    label={"Select Batch Numbers"}
-                    sx={{ fontSize: "0.85rem" }}
-                  />
-                ))}
-              </FormGroup>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+      Select Columns
+    </Typography>
+              <FormControlLabel
+      control={
+        <Checkbox
+          checked={selectedColumns.length === columns.length && columns.length > 0}
+          indeterminate={
+            selectedColumns.length > 0 && selectedColumns.length < columns.length
+          }
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedColumns(columns);
+            } else {
+              setSelectedColumns([]);
+            }
+          }}
+          size="small"
+        />
+      }
+      label="Select All Columns"
+      sx={{ fontSize: "0.85rem" }}
+    />
+
+    <FormGroup sx={{ ml: 1 }}>
+      {columns.map((col) => (
+        <FormControlLabel
+          key={col}
+          control={
+            <Checkbox
+              checked={selectedColumns.includes(col)}
+              onChange={() => handleCheckboxChange(col)}
+              size="small"
+            />
+          }
+          label={col}
+          sx={{ fontSize: "0.85rem" }}
+        />
+      ))}
+    </FormGroup>
+
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>
+      Select Batch Numbers
+    </Typography>
+
+    {/* Select All Batch Numbers */}
+    <FormControlLabel
+      control={
+        <Checkbox
+          checked={selectedBatchNos.length === batchNos.length && batchNos.length > 0}
+          indeterminate={
+            selectedBatchNos.length > 0 &&
+            selectedBatchNos.length < batchNos.length
+          }
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedBatchNos(batchNos);
+            } else {
+              setSelectedBatchNos([]);
+            }
+          }}
+          size="small"
+        />
+      }
+      label="Select All Batch Numbers"
+      sx={{ fontSize: "0.85rem" }}
+    />
+
+    <FormGroup sx={{ ml: 1 }}>
+      {batchNos.map((batchno) => (
+        <FormControlLabel
+          key={batchno}
+          control={
+            <Checkbox
+              checked={selectedBatchNos.includes(batchno)}
+              onChange={() => handleCheckboxChange(batchno)}
+              size="small"
+            />
+          }
+          label={batchno}
+          sx={{ fontSize: "0.85rem" }}
+        />
+      ))}
+    </FormGroup>
+
               <Button variant="contained" size="small" sx={{ mt: 1 }} onClick={runVariabilityAnalysis}>
                 Run Variability Analysis
               </Button>
