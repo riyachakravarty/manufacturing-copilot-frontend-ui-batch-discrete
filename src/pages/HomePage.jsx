@@ -46,7 +46,7 @@ const HomePage = ({ setUploadedFile, setSelectedMode }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('https://manufacturing-copilot-backend.onrender.com/upload', {
+      const response = await fetch('https://manufacturing-copilot-backend-batch.onrender.com/upload', {
         method: 'POST',
         body: formData,
       });
