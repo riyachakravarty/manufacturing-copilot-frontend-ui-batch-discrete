@@ -329,35 +329,51 @@ export default function DataVisualizationAndEngineering() {
     );
   };
 
-  const runVariabilityAnalysis = async () => {
+  const runBatchProfiling = async () => {
     if (selectedColumns.length === 0) {
-      setError("Please select at least one column for analysis.");
+      setError("Please select at least one column");
+      return;
+    }
+    if (selectedBatchNos.length === 0) {
+      setError("Please select at least one batch");
       return;
     }
     setError("");
     setLoading(true);
     setPlotData(null);
     try {
-      const prompt = `Perform variability analysis where selected variable is ${selectedColumns[0]}`;
-      const response = await fetch(`${BACKEND_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
-      const result = await response.json();
-      if (result.type === "plot" && result.data) {
-        setPlotData(result.data);
-      } else {
-        setError("Unexpected response from server.");
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Error running variability analysis.");
-    } finally {
-      setLoading(false);
+    const payload = {
+      columns: selectedColumns,
+      batch_numbers: selectedBatchNos,
+    };
+
+    const response = await fetch(`${BACKEND_URL}/run_batch_profiles`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
     }
-  };
+
+    const result = await response.json();
+
+    if (result.pages && Array.isArray(result.pages)) {
+      // pages contain: [{ batch: , image: base64 }, {...}]
+      setPlotData(result.pages);
+    } else {
+      setError("Unexpected response from server.");
+    }
+
+  } catch (err) {
+    console.error(err);
+    setError("Error running batch profiling.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Missing Value Analysis handlers
   const runMissingValueAnalysis = async () => {
@@ -863,8 +879,8 @@ export default function DataVisualizationAndEngineering() {
       ))}
     </FormGroup>
 
-              <Button variant="contained" size="small" sx={{ mt: 1 }} onClick={runVariabilityAnalysis}>
-                Run Variability Analysis
+              <Button variant="contained" size="small" sx={{ mt: 1 }} onClick={runBatchProfiling}>
+                Generate Batch Profiles
               </Button>
             </AccordionDetails>
           </Accordion>
