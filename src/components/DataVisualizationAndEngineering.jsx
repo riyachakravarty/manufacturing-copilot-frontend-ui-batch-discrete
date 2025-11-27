@@ -345,9 +345,13 @@ export default function DataVisualizationAndEngineering() {
 
   try {
     const payload = {
-      columns: selectedColumns,
-      batch_numbers: selectedBatchNos,
+      columns: selectedColumns.map(String),
+      batch_numbers: selectedBatchNos.map(String),
     };
+
+    console.log("Payload sent:", payload);
+    console.log("typeof columns:", selectedColumns.map(c => typeof c));
+    console.log("typeof batchNos:", selectedBatchNos.map(b => typeof b));
 
     const response = await fetch(`${BACKEND_URL}/run_batch_profiles`, {
       method: "POST",
