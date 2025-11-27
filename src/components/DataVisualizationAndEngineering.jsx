@@ -195,8 +195,8 @@ export default function DataVisualizationAndEngineering() {
         const response = await fetch(`${BACKEND_URL}/get_batchnos`);
         if (!response.ok) throw new Error("Failed to fetch batch numbers");
         const data = await response.json();
-        if (data.batchnos) {
-          setBatchNos(data.batchnos);
+        if (data.batch_numbers) {
+          setBatchNos(data.batch_numbers);
         } else {
           setError(data.error || "No batch numbers found.");
         }
