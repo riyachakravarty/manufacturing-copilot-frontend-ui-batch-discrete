@@ -41,6 +41,8 @@ export default function DataVisualizationAndEngineering() {
   const [expanded, setExpanded] = useState("variability");
   const [columns, setColumns] = useState([]);
   const [selectedColumns, setSelectedColumns] = useState([]);
+  const [batchNos, setBatchNos] = useState([]);
+  const [selectedBatchNos, setSelectedBatchNos] = useState([]);
 
   const [plotData, setPlotData] = useState(null);
   const [error, setError] = useState("");
@@ -184,6 +186,26 @@ export default function DataVisualizationAndEngineering() {
       }
     };
     fetchColumns();
+  }, []);
+
+  useEffect(() => {
+    // Fetch batch nos. on mount
+    const fetchBatchNos = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/get_batchnos`);
+        if (!response.ok) throw new Error("Failed to fetch batch numbers");
+        const data = await response.json();
+        if (data.batchnos) {
+          setBatchNos(data.batchnos);
+        } else {
+          setError(data.error || "No batch numbers found.");
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Error fetching columns.");
+      }
+    };
+    fetchBatchNos();
   }, []);
 
   useEffect(() => {
@@ -748,11 +770,11 @@ export default function DataVisualizationAndEngineering() {
           }}
           elevation={3}
         >
-          {/* Variability Analysis */}
-          <Accordion expanded={expanded === "variability"} onChange={handleExpand("variability")}>
+          {/* Batch profile generation */}
+          <Accordion expanded={expanded === "batchprofiles"} onChange={handleExpand("batchprofiles")}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-                Variability Analysis
+                Batch Profile Generator
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -768,6 +790,22 @@ export default function DataVisualizationAndEngineering() {
                       />
                     }
                     label={col}
+                    sx={{ fontSize: "0.85rem" }}
+                  />
+                ))}
+              </FormGroup>
+              <FormGroup>
+                {batchNos.map((batchno) => (
+                  <FormControlLabel
+                    key={batchno}
+                    control={
+                      <Checkbox
+                        checked={selectedBatchNos.includes(batchno)}
+                        onChange={() => handleCheckboxChange(batchno)}
+                        size="small"
+                      />
+                    }
+                    label={batchno}
                     sx={{ fontSize: "0.85rem" }}
                   />
                 ))}
