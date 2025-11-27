@@ -346,7 +346,7 @@ export default function DataVisualizationAndEngineering() {
   try {
     const payload = {
       columns: selectedColumns.map(String),
-      batch_numbers: selectedBatchNos.map(String),
+      batch_numbers: selectedBatchNos.map(b => String(b)),
     };
 
     console.log("Payload sent:", payload);
