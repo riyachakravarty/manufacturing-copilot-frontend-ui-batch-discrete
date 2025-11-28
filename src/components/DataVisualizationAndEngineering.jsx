@@ -350,8 +350,6 @@ export default function DataVisualizationAndEngineering() {
     };
 
     console.log("Payload sent:", payload);
-    console.log("typeof columns:", selectedColumns.map(c => typeof c));
-    console.log("typeof batchNos:", selectedBatchNos.map(b => typeof b));
 
     const response = await fetch(`${BACKEND_URL}/run_batch_profiles`, {
       method: "POST",
@@ -365,16 +363,16 @@ export default function DataVisualizationAndEngineering() {
 
     const result = await response.json();
 
-    // Backend format:
+    // Backend format now:
     // {
-    //   pages: [
-    //     { batch: "...", type: "plot", data: {...} },
-    //     { batch: "...", type: "plot", data: {...} }
-    //   ]
+    //    type: "plot",
+    //    data: { ...plotly figure... },
+    //    message: "Batch profiling successful",
+    //    num_subplots: number
     // }
 
-    if (result.pages && Array.isArray(result.pages)) {
-      setPlotData(result.pages);
+    if (result.type === "plot" && result.data) {
+      setPlotData(result.data);  // SINGLE plotly figure JSON
     } else {
       setError("Unexpected response structure from server.");
     }
@@ -386,7 +384,6 @@ export default function DataVisualizationAndEngineering() {
     setLoading(false);
   }
 };
-
 
 
   // Missing Value Analysis handlers
@@ -1458,22 +1455,14 @@ export default function DataVisualizationAndEngineering() {
         {loading && <CircularProgress />}
         {error && <Alert severity="error">{error}</Alert>}
 
-        {plotData && plotData.map((page, idx) => (
-  <div key={idx} style={{ marginBottom: "32px" }}>
-    {(page.batch || page.column) && (
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-        {page.batch ? `Batch ${page.batch}` : `Column ${page.column}`}
-      </Typography>
-    )}
-
-    <Plot
-      data={page.data.data}
-      layout={page.data.layout}
-      config={{ responsive: true }}
-      style={{ width: "100%", height: "100%" }}
-    />
-  </div>
-))}
+        {plotData && (
+  <Plot
+    data={plotData.data}
+    layout={plotData.layout}
+    config={{ responsive: true }}
+    style={{ width: "100%", height: "auto" }}
+  />
+)}
 
 
       {/* Post-Treatment Prompt Dialog */}
