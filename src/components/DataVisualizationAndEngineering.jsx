@@ -95,7 +95,6 @@ export default function DataVisualizationAndEngineering() {
 
 
     // For phase definitions in a batch
-    const PhaseDefinitionAccordion = () => {
   const [phases, setPhases] = useState([
     {
       phaseName: "",
@@ -108,38 +107,38 @@ export default function DataVisualizationAndEngineering() {
     }
   ]);
 
-  const addPhase = () => {
-    setPhases([
-      ...phases,
-      {
-        phaseName: "",
-        startConditions: [
-          { column: "", operator: ">", value: "", logic: "AND", conditionType: "first_time" }
-        ],
-        endConditions: [
-          { column: "", operator: "<", value: "", logic: "AND", conditionType: "first_time" }
-        ]
-      }
-    ]);
-  };
+const addPhase = () => {
+  setPhases([
+    ...phases,
+    {
+      phaseName: "",
+      startConditions: [
+        { column: "", operator: ">", value: "", logic: "AND", conditionType: "first_time" }
+      ],
+      endConditions: [
+        { column: "", operator: "<", value: "", logic: "AND", conditionType: "first_time" }
+      ]
+    }
+  ]);
+};
 
-  const addCondition = (phaseIndex, section) => {
-    const updated = [...phases];
-    updated[phaseIndex][section].push({
-      column: "",
-      operator: ">",
-      value: "",
-      logic: "AND",
-      conditionType: "first_time"
-    });
-    setPhases(updated);
-  };
+const addCondition = (phaseIndex, section) => {
+  const updated = [...phases];
+  updated[phaseIndex][section].push({
+    column: "",
+    operator: ">",
+    value: "",
+    logic: "AND",
+    conditionType: "first_time"
+  });
+  setPhases(updated);
+};
 
-  const updateCondition = (phaseIndex, section, condIndex, field, value) => {
-    const updated = [...phases];
-    updated[phaseIndex][section][condIndex][field] = value;
-    setPhases(updated);
-  };
+const updateCondition = (phaseIndex, section, condIndex, field, value) => {
+  const updated = [...phases];
+  updated[phaseIndex][section][condIndex][field] = value;
+  setPhases(updated);
+};
 
 
   // Handlers for "Select All" checkboxes
@@ -1821,4 +1820,4 @@ export default function DataVisualizationAndEngineering() {
 </Grid>
 </Grid>
   );
-}}
+}
