@@ -29,10 +29,12 @@ import {
   Radio,
   MenuItem,
   Select,
-  //FormControl,
-  //InputLabel
+  IconButton,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+
 import { useTheme } from "@mui/material/styles";
 
 const BACKEND_URL = "https://manufacturing-copilot-backend-batch.onrender.com";
