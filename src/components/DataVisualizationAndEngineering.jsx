@@ -88,6 +88,55 @@ export default function DataVisualizationAndEngineering() {
   const [selectAllMissingValueIntervals, setSelectAllMissingValueIntervals] = useState(false);
   const [selectAllOutlierIntervals, setSelectAllOutlierIntervals] = useState(false);
 
+
+    // For phase definitions in a batch
+    const PhaseDefinitionAccordion = () => {
+  const [phases, setPhases] = useState([
+    {
+      phaseName: "",
+      startConditions: [
+        { column: "", operator: ">", value: "", logic: "AND", conditionType: "first_time" }
+      ],
+      endConditions: [
+        { column: "", operator: "<", value: "", logic: "AND", conditionType: "first_time" }
+      ]
+    }
+  ]);
+
+  const addPhase = () => {
+    setPhases([
+      ...phases,
+      {
+        phaseName: "",
+        startConditions: [
+          { column: "", operator: ">", value: "", logic: "AND", conditionType: "first_time" }
+        ],
+        endConditions: [
+          { column: "", operator: "<", value: "", logic: "AND", conditionType: "first_time" }
+        ]
+      }
+    ]);
+  };
+
+  const addCondition = (phaseIndex, section) => {
+    const updated = [...phases];
+    updated[phaseIndex][section].push({
+      column: "",
+      operator: ">",
+      value: "",
+      logic: "AND",
+      conditionType: "first_time"
+    });
+    setPhases(updated);
+  };
+
+  const updateCondition = (phaseIndex, section, condIndex, field, value) => {
+    const updated = [...phases];
+    updated[phaseIndex][section][condIndex][field] = value;
+    setPhases(updated);
+  };
+
+
   // Handlers for "Select All" checkboxes
 
   // For Columns in Missing Date Times
@@ -896,6 +945,246 @@ export default function DataVisualizationAndEngineering() {
             </AccordionDetails>
           </Accordion>
 
+          
+
+ {/* Phase defintion in a batch */}
+
+<Accordion sx={{ mt: 2 }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
+          Phase Definition Within a Batch
+        </Typography>
+      </AccordionSummary>
+
+      <AccordionDetails>
+
+        {phases.map((phase, pIndex) => (
+          <Box key={pIndex} sx={{ border: "1px solid #444", p: 2, mb: 3, borderRadius: 2 }}>
+
+            {/* Phase Name */}
+            <TextField
+              label="Phase Name"
+              value={phase.phaseName}
+              onChange={(e) => {
+                const updated = [...phases];
+                updated[pIndex].phaseName = e.target.value;
+                setPhases(updated);
+              }}
+              fullWidth
+              size="small"
+              sx={{ mb: 2 }}
+            />
+
+            {/* ================== START LOGIC ================== */}
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+              Start Logic
+            </Typography>
+
+            {phase.startConditions.map((cond, cIndex) => (
+              <Grid container spacing={1} alignItems="center" key={cIndex} sx={{ mb: 1 }}>
+
+                {/* Column Selector */}
+                <Grid item xs={2}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Column</InputLabel>
+                    <Select
+                      label="Column"
+                      value={cond.column}
+                      onChange={(e) =>
+                        updateCondition(pIndex, "startConditions", cIndex, "column", e.target.value)
+                      }
+                    >
+                      {columns.map((col) => (
+                        <MenuItem key={col} value={col}>{col}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Operator */}
+                <Grid item xs={1}>
+                  <TextField
+                    size="small"
+                    label="Op"
+                    placeholder="<, >, ="
+                    value={cond.operator}
+                    onChange={(e) =>
+                      updateCondition(pIndex, "startConditions", cIndex, "operator", e.target.value)
+                    }
+                  />
+                </Grid>
+
+                {/* Value */}
+                <Grid item xs={2}>
+                  <TextField
+                    size="small"
+                    label="Value"
+                    value={cond.value}
+                    onChange={(e) =>
+                      updateCondition(pIndex, "startConditions", cIndex, "value", e.target.value)
+                    }
+                  />
+                </Grid>
+
+                {/* Condition Type */}
+                <Grid item xs={3}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Condition Type</InputLabel>
+                    <Select
+                      label="Condition Type"
+                      value={cond.conditionType}
+                      onChange={(e) =>
+                        updateCondition(
+                          pIndex,
+                          "startConditions",
+                          cIndex,
+                          "conditionType",
+                          e.target.value
+                        )
+                      }
+                    >
+                      <MenuItem value="first_time">First time</MenuItem>
+                      <MenuItem value="n_times">N times consecutively</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* AND / OR */}
+                <Grid item xs={2}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Logic</InputLabel>
+                    <Select
+                      label="Logic"
+                      value={cond.logic}
+                      onChange={(e) =>
+                        updateCondition(pIndex, "startConditions", cIndex, "logic", e.target.value)
+                      }
+                    >
+                      <MenuItem value="AND">AND</MenuItem>
+                      <MenuItem value="OR">OR</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+              </Grid>
+            ))}
+
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => addCondition(pIndex, "startConditions")}
+              sx={{ mb: 2 }}
+            >
+              + Add Start Condition
+            </Button>
+
+            {/* ================== END LOGIC ================== */}
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, mt: 1 }}>
+              End Logic
+            </Typography>
+
+            {phase.endConditions.map((cond, cIndex) => (
+              <Grid container spacing={1} alignItems="center" key={cIndex} sx={{ mb: 1 }}>
+
+                <Grid item xs={2}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Column</InputLabel>
+                    <Select
+                      label="Column"
+                      value={cond.column}
+                      onChange={(e) =>
+                        updateCondition(pIndex, "endConditions", cIndex, "column", e.target.value)
+                      }
+                    >
+                      {columns.map((col) => (
+                        <MenuItem key={col} value={col}>{col}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={1}>
+                  <TextField
+                    size="small"
+                    label="Op"
+                    placeholder="<, >, ="
+                    value={cond.operator}
+                    onChange={(e) =>
+                      updateCondition(pIndex, "endConditions", cIndex, "operator", e.target.value)
+                    }
+                  />
+                </Grid>
+
+                <Grid item xs={2}>
+                  <TextField
+                    size="small"
+                    label="Value"
+                    value={cond.value}
+                    onChange={(e) =>
+                      updateCondition(pIndex, "endConditions", cIndex, "value", e.target.value)
+                    }
+                  />
+                </Grid>
+
+                <Grid item xs={3}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Condition Type</InputLabel>
+                    <Select
+                      label="Condition Type"
+                      value={cond.conditionType}
+                      onChange={(e) =>
+                        updateCondition(
+                          pIndex,
+                          "endConditions",
+                          cIndex,
+                          "conditionType",
+                          e.target.value
+                        )
+                      }
+                    >
+                      <MenuItem value="first_time">First time</MenuItem>
+                      <MenuItem value="n_times">N times consecutively</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={2}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Logic</InputLabel>
+                    <Select
+                      label="Logic"
+                      value={cond.logic}
+                      onChange={(e) =>
+                        updateCondition(pIndex, "endConditions", cIndex, "logic", e.target.value)
+                      }
+                    >
+                      <MenuItem value="AND">AND</MenuItem>
+                      <MenuItem value="OR">OR</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+              </Grid>
+            ))}
+
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => addCondition(pIndex, "endConditions")}
+            >
+              + Add End Condition
+            </Button>
+
+          </Box>
+        ))}
+
+        <Button variant="contained" size="small" onClick={addPhase}>
+          + Add New Phase
+        </Button>
+
+      </AccordionDetails>
+    </Accordion>
+
           {/* Missing Value Analysis */}
           <Accordion
             expanded={expanded === "missingAnalysis"}
@@ -1527,4 +1816,4 @@ export default function DataVisualizationAndEngineering() {
 </Grid>
 </Grid>
   );
-}
+}}
