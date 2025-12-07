@@ -382,6 +382,7 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
     );
   };
 
+  // Batch profiling
   const runBatchProfiling = async () => {
   if (selectedColumns.length === 0) {
     setError("Please select at least one column");
@@ -437,6 +438,87 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
     setLoading(false);
   }
 };
+
+  const generatePhaseWiseBatchProfiles = async () => {
+  try {
+    // Basic validations
+    if (!phases || phases.length === 0) {
+      setError("Please define at least one phase.");
+      return;
+    }
+    if (selectedColumns.length === 0) {
+      setError("Please select at least one column (in Batch Profile Generator).");
+      return;
+    }
+    if (selectedBatchNos.length === 0) {
+      setError("Please select at least one batch (in Batch Profile Generator).");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+    setPlotData(null);
+
+    // Build payload exactly as backend expects, and include columns & batch_numbers
+    const payload = {
+      phases: phases.map((ph) => ({
+        phaseName: ph.phaseName,
+        startConditions: ph.startConditions.map((c) => ({
+          column: c.column,
+          operator: c.operator,
+          value: c.value,
+          logic: c.logic,
+          conditionType: c.conditionType
+        })),
+        endConditions: ph.endConditions.map((c) => ({
+          column: c.column,
+          operator: c.operator,
+          value: c.value,
+          logic: c.logic,
+          conditionType: c.conditionType
+        }))
+      })),
+      // add the columns and batch_numbers selected in the Batch Profile Generator
+      plot_columns: selectedColumns.map(String),
+      batch_numbers: selectedBatchNos.map((b) => String(b))
+    };
+
+    console.log("Sending Phase+Profile Payload:", payload);
+
+    const response = await fetch(`${BACKEND_URL}/define_phases`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      // try to read error body for better debugging
+      let errBody = "";
+      try {
+        errBody = await response.text();
+      } catch (e) {}
+      throw new Error(`Server error: ${response.status} ${errBody}`);
+    }
+
+    const result = await response.json();
+    console.log("define_phases result:", result);
+
+    // Expecting { type: "plot", data: {...plotly json...}, ... }
+    if (result.type === "plot" && result.data) {
+      setPlotData(result.data);  // SINGLE plotly figure JSON
+    } else {
+      setError("Unexpected response structure from server.");
+    }
+
+  } catch (err) {
+    console.error(err);
+    setError("Error running batch profiling with phase definitions.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
 
   // Missing Value Analysis handlers
@@ -1185,6 +1267,16 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
         <Button variant="contained" size="small" onClick={addPhase}>
           + Add New Phase
         </Button>
+
+        <Button
+  variant="contained"
+  size="small"
+  sx={{ mt: 2 }}
+  onClick={generatePhaseWiseBatchProfiles}
+>
+  Generate batch profiles with phase demarcations
+</Button>
+
 
       </AccordionDetails>
     </Accordion>
