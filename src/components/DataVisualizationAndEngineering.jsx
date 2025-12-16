@@ -325,8 +325,17 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
         
         const data = await res.json();
         if (data.table) {
-          setSummaryRows(data.table);
-        } else {
+          setSummaryRows(
+            data.table.map(r => ({
+              batch: r.Batch_No,
+              phase: r.Phase_Name,
+              timestamp_from: r.Timestamp_From,
+              timestamp_to: r.Timestamp_To
+      }))
+    );
+}
+
+         else {
           setSummaryRows([]);
         }
       } catch (err) {
