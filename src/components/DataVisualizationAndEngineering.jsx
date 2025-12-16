@@ -324,8 +324,8 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
         if (!res.ok) throw new Error("Failed to fetch summary table");
         
         const data = await res.json();
-        if (data.rows) {
-          setSummaryRows(data.rows);
+        if (data.table) {
+          setSummaryRows(data.table);
         } else {
           setSummaryRows([]);
         }
