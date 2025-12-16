@@ -70,6 +70,10 @@ export default function DataVisualizationAndEngineering() {
   // Selected items for treatment cards
   const [treatmentSelectedColumns, setTreatmentSelectedColumns] = useState([]);
   const [treatmentSelectedIntervals, setTreatmentSelectedIntervals] = useState([]);
+  const [summaryRows, setSummaryRows] = useState([]);
+  const [selectedSummaryRows, setSelectedSummaryRows] = useState([]);
+  const [selectAllSummaryRows, setSelectAllSummaryRows] = useState(false);
+
 
   // Outlier treatment states
   //const [outlierMethod, setOutlierMethod] = useState("zscore");
@@ -311,28 +315,34 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
 
   // Auto-load missing intervals when a column is selected
   useEffect(() => {
-    if (selectedMissingValueColumn) {
-      const fetchIntervals = async () => {
-        try {
-          const res = await fetch(
-            `${BACKEND_URL}/missing_value_intervals?column=${selectedMissingValueColumn}`
-          );
-          if (!res.ok) throw new Error("Failed to fetch missing value intervals");
-          const data = await res.json();
-          if (data.intervals) {
-            setMissingValueIntervals(data.intervals);
-          }
-        } catch (err) {
-          console.error("Error loading missing value intervals:", err);
-          setMissingValueIntervals([]);
+  if (selectedMissingValueColumn) {
+    const fetchSummaryTable = async () => {
+      try {
+        const res = await fetch(
+          `${BACKEND_URL}/missing_value_intervals?column=${selectedMissingValueColumn}`
+        );
+        if (!res.ok) throw new Error("Failed to fetch summary table");
+        
+        const data = await res.json();
+        if (data.rows) {
+          setSummaryRows(data.rows);
+        } else {
+          setSummaryRows([]);
         }
-      };
-      fetchIntervals();
-    } else {
-      setMissingValueIntervals([]);
-      setSelectedMissingValueIntervals([]);
-    }
-  }, [selectedMissingValueColumn]);
+      } catch (err) {
+        console.error("Error loading summary rows:", err);
+        setSummaryRows([]);
+      }
+    };
+
+    fetchSummaryTable();
+  } else {
+    setSummaryRows([]);
+    setSelectedSummaryRows([]);
+  }
+}, [selectedMissingValueColumn]);
+
+
 
   // Auto-load outlier intervals when a column is selected
   useEffect(() => {
@@ -381,6 +391,41 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
       prev.includes(column) ? prev.filter((c) => c !== column) : [...prev, column]
     );
   };
+
+  const handleSummaryRowToggle = (row) => {
+  const exists = selectedSummaryRows.some(
+    r =>
+      r.batch === row.batch &&
+      r.phase === row.phase &&
+      r.timestamp_from === row.timestamp_from &&
+      r.timestamp_to === row.timestamp_to
+  );
+
+  let updated;
+  if (exists) {
+    updated = selectedSummaryRows.filter(
+      r =>
+        !(
+          r.batch === row.batch &&
+          r.phase === row.phase &&
+          r.timestamp_from === row.timestamp_from &&
+          r.timestamp_to === row.timestamp_to
+        )
+    );
+  } else {
+    updated = [...selectedSummaryRows, row];
+  }
+
+  setSelectedSummaryRows(updated);
+  setSelectAllSummaryRows(updated.length === summaryRows.length);
+};
+
+const handleSelectAllSummaryRows = () => {
+  const newValue = !selectAllSummaryRows;
+  setSelectAllSummaryRows(newValue);
+  setSelectedSummaryRows(newValue ? [...summaryRows] : []);
+};
+
 
   // Batch profiling
   const runBatchProfiling = async () => {
@@ -1389,52 +1434,85 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
 
         {/* Intervals List with Select All */}
         <Grid
-          item
-          xs={4}
-          sx={{ maxHeight: 200, overflowY: "auto", borderRight: "1px solid #ccc", pl: 1 }}
-        >
-          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
-            Intervals
-          </Typography>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={selectAllDateTimeIntervals}
-                  onChange={handleSelectAllDateTimeIntervals}
-                />
-              }
-              label="Select All"
-              sx={{ fontSize: "0.85rem" }}
-            />
-            {missingDateTimeIntervals.length > 0 ? (
-              missingDateTimeIntervals.map((interval) => {
-                const checked = treatmentSelectedIntervals.some(
-                  (i) => i.start === interval.start && i.end === interval.end
-                );
-                return (
-                  <FormControlLabel
-                    key={`${interval.start}-${interval.end}`}
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={checked}
-                        onChange={() => handleTreatmentIntervalToggle(interval)}
-                      />
-                    }
-                    label={`${interval.start} → ${interval.end}`}
-                    sx={{ fontSize: "0.85rem" }}
-                  />
-                );
-              })
-            ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                No missing datetime intervals found.
-              </Typography>
+  item
+  xs={12}
+  sx={{
+    maxHeight: 300,
+    overflowY: "auto",
+    p: 1,
+    border: "1px solid #ccc",
+    borderRadius: 1,
+    mt: 2
+  }}
+>
+  <Typography variant="caption" sx={{ fontWeight: "bold" }}>
+    Missing Value Interval Summary Table
+  </Typography>
+
+  {/* SELECT ALL */}
+  <FormGroup>
+    <FormControlLabel
+      control={
+        <Checkbox
+          size="small"
+          checked={selectAllSummaryRows}
+          onChange={handleSelectAllSummaryRows}
+        />
+      }
+      label="Select All"
+      sx={{ fontSize: "0.85rem", mb: 1 }}
+    />
+  </FormGroup>
+
+  {/* TABLE HEADER */}
+  <Grid container sx={{ fontWeight: "bold", borderBottom: "1px solid #ccc", pb: 1 }}>
+    <Grid item xs={1}></Grid>
+    <Grid item xs={2}>Batch</Grid>
+    <Grid item xs={3}>Phase</Grid>
+    <Grid item xs={3}>Timestamp From</Grid>
+    <Grid item xs={3}>Timestamp To</Grid>
+  </Grid>
+
+  {/* TABLE ROWS */}
+  {summaryRows.length > 0 ? (
+    summaryRows.map((row, idx) => (
+      <Grid
+        container
+        key={idx}
+        sx={{
+          borderBottom: "1px solid #eee",
+          py: 1,
+          alignItems: "center"
+        }}
+      >
+        {/* Checkbox */}
+        <Grid item xs={1}>
+          <Checkbox
+            size="small"
+            checked={selectedSummaryRows.some(
+              (r) =>
+                r.batch === row.batch &&
+                r.phase === row.phase &&
+                r.timestamp_from === row.timestamp_from &&
+                r.timestamp_to === row.timestamp_to
             )}
-          </FormGroup>
+            onChange={() => handleSummaryRowToggle(row)}
+          />
         </Grid>
+
+        <Grid item xs={2}>{row.batch}</Grid>
+        <Grid item xs={3}>{row.phase}</Grid>
+        <Grid item xs={3}>{row.timestamp_from}</Grid>
+        <Grid item xs={3}>{row.timestamp_to}</Grid>
+      </Grid>
+    ))
+  ) : (
+    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+      No summarized rows found.
+    </Typography>
+  )}
+</Grid>
+
 
         {/* Treatment Method */}
         <Grid item xs={4}>
