@@ -1432,6 +1432,67 @@ const handleSelectAllSummaryRows = () => {
           </FormGroup>
         </Grid>
 
+        
+        {/* Treatment Method */}
+        <Grid item xs={4}>
+          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
+            Treatment Method
+          </Typography>
+          <Select
+            size="small"
+            value={treatmentMethod}
+            onChange={(e) => setTreatmentMethod(e.target.value)}
+            fullWidth
+            sx={{ mt: 1 }}
+          >
+            <MenuItem value="Mean">Mean</MenuItem>
+            <MenuItem value="Median">Median</MenuItem>
+            <MenuItem value="Forward fill">Forward Fill</MenuItem>
+            <MenuItem value="Backward fill">Backward Fill</MenuItem>
+            <MenuItem value="Delete rows">Delete rows</MenuItem>
+          </Select>
+          <Button
+            variant="contained"
+            size="small"
+            sx={{ mt: 2 }}
+            onClick={applyMissingValueTreatment}
+            disabled={loadingTreatment}
+          >
+            {loadingTreatment ? "Applying..." : "Apply Treatment"}
+          </Button>
+        </Grid>
+      </Grid>
+    )}
+
+    {treatmentMode === "column" && (
+      <Grid container spacing={2}>
+        {/* Columns Radio List */}
+        <Grid
+          item
+          xs={6}
+          sx={{ maxHeight: 150, overflowY: "auto", borderRight: "1px solid #ccc", pr: 1 }}
+        >
+          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
+            Columns
+          </Typography>
+          <FormGroup>
+            {missingValueColumns.map((col) => (
+              <FormControlLabel
+                key={col}
+                control={
+                  <Radio
+                    size="small"
+                    checked={selectedMissingValueColumn === col}
+                    onChange={() => setSelectedMissingValueColumn(col)}
+                  />
+                }
+                label={col}
+                sx={{ fontSize: "0.85rem" }}
+              />
+            ))}
+          </FormGroup>
+        </Grid>
+
         {/* Intervals List with Select All */}
         <Grid
   item
@@ -1514,111 +1575,6 @@ const handleSelectAllSummaryRows = () => {
 </Grid>
 
 
-        {/* Treatment Method */}
-        <Grid item xs={4}>
-          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
-            Treatment Method
-          </Typography>
-          <Select
-            size="small"
-            value={treatmentMethod}
-            onChange={(e) => setTreatmentMethod(e.target.value)}
-            fullWidth
-            sx={{ mt: 1 }}
-          >
-            <MenuItem value="Mean">Mean</MenuItem>
-            <MenuItem value="Median">Median</MenuItem>
-            <MenuItem value="Forward fill">Forward Fill</MenuItem>
-            <MenuItem value="Backward fill">Backward Fill</MenuItem>
-            <MenuItem value="Delete rows">Delete rows</MenuItem>
-          </Select>
-          <Button
-            variant="contained"
-            size="small"
-            sx={{ mt: 2 }}
-            onClick={applyMissingValueTreatment}
-            disabled={loadingTreatment}
-          >
-            {loadingTreatment ? "Applying..." : "Apply Treatment"}
-          </Button>
-        </Grid>
-      </Grid>
-    )}
-
-    {treatmentMode === "column" && (
-      <Grid container spacing={2}>
-        {/* Columns Radio List */}
-        <Grid
-          item
-          xs={6}
-          sx={{ maxHeight: 150, overflowY: "auto", borderRight: "1px solid #ccc", pr: 1 }}
-        >
-          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
-            Columns
-          </Typography>
-          <FormGroup>
-            {missingValueColumns.map((col) => (
-              <FormControlLabel
-                key={col}
-                control={
-                  <Radio
-                    size="small"
-                    checked={selectedMissingValueColumn === col}
-                    onChange={() => setSelectedMissingValueColumn(col)}
-                  />
-                }
-                label={col}
-                sx={{ fontSize: "0.85rem" }}
-              />
-            ))}
-          </FormGroup>
-        </Grid>
-
-        {/* Intervals List with Select All */}
-        <Grid
-          item
-          xs={6}
-          sx={{ maxHeight: 200, overflowY: "auto", borderRight: "1px solid #ccc", pr: 1 }}
-        >
-          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
-            Missing Value Intervals
-          </Typography>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={selectAllMissingValueIntervals}
-                  onChange={handleSelectAllMissingValueIntervals}
-                />
-              }
-              label="Select All"
-              sx={{ fontSize: "0.85rem" }}
-            />
-            {missingValueIntervals.length > 0 ? (
-              missingValueIntervals.map((interval, idx) => (
-                <FormControlLabel
-                  key={`${interval.start}-${interval.end}`}
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={selectedMissingValueIntervals.some(
-                        (i) => i.start === interval.start && i.end === interval.end
-                      )}
-                      onChange={() => handleMissingValueIntervalToggle(interval)}
-                    />
-                  }
-                  label={`${interval.start} → ${interval.end}`}
-                  sx={{ fontSize: "0.85rem" }}
-                />
-              ))
-            ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                No missing value intervals found.
-              </Typography>
-            )}
-          </FormGroup>
-        </Grid>
 
         {/* Treatment Method */}
         <Grid item xs={12}>
