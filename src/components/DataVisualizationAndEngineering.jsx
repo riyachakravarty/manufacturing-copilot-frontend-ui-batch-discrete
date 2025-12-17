@@ -324,27 +324,19 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
         if (!res.ok) throw new Error("Failed to fetch summary table");
 
         const data = await res.json();
-
         if (data.table) {
-          const rows = data.table.map(r => {
-            const rowId = `${r.Batch_No}-${r.Phase_Name}-${r.Timestamp_From}-${r.Timestamp_To}`;
-
-            return {
-              rowId,
+          setSummaryRows(
+            data.table.map(r => ({
               batch: r.Batch_No,
               phase: r.Phase_Name,
               timestamp_from: r.Timestamp_From,
               timestamp_to: r.Timestamp_To,
               interval_start: r.Interval_Start,
-              interval_end: r.Interval_End
-            };
-          });
-
-          setSummaryRows(rows);
-        } else {
-          setSummaryRows([]);
+              interval_end: r.Interval_End,
+              rowId: `${r.Batch_No}-${r.Phase_Name}-${r.Timestamp_From}-${r.Timestamp_To}`
+            }))
+          );
         }
-
       } catch (err) {
         console.error("Error loading summary rows:", err);
         setSummaryRows([]);
@@ -1506,95 +1498,113 @@ const handleSelectAllSummaryRows = () => {
   item
   xs={12}
   sx={{
-    maxHeight: 300,
+    maxHeight: 350,
     overflowY: "auto",
-    p: 1,
+    p: 2,
     border: "1px solid #ccc",
-    borderRadius: 1,
-    mt: 2
+    borderRadius: 2,
+    mt: 2,
+    backgroundColor: "#fafafa"
   }}
 >
-  <Typography variant="caption" sx={{ fontWeight: "bold" }}>
+  <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
     Missing Value Interval Summary Table
   </Typography>
 
   {/* SELECT ALL */}
-  <FormGroup>
-    <FormControlLabel
-      control={
-        <Checkbox
-          size="small"
-          checked={selectAllSummaryRows}
-          onChange={handleSelectAllSummaryRows}
-        />
-      }
-      label="Select All"
-      sx={{ fontSize: "0.85rem", mb: 1 }}
-    />
-  </FormGroup>
+  <FormControlLabel
+    control={
+      <Checkbox
+        size="small"
+        checked={selectAllSummaryRows}
+        onChange={handleSelectAllSummaryRows}
+      />
+    }
+    label="Select All"
+    sx={{ mb: 2 }}
+  />
 
-  {/* TABLE HEADER */}
-  <Grid container sx={{ fontWeight: "bold", borderBottom: "1px solid #ccc", pb: 1 }}>
+  {/* HEADER */}
+  <Grid
+    container
+    sx={{
+      fontWeight: "bold",
+      borderBottom: "2px solid #ccc",
+      pb: 1,
+      mb: 1,
+      textAlign: "left"
+    }}
+  >
     <Grid item xs={1}></Grid>
     <Grid item xs={2}>Batch</Grid>
-    <Grid item xs={3}>Phase</Grid>
+    <Grid item xs={2}>Phase</Grid>
     <Grid item xs={3}>Timestamp From</Grid>
     <Grid item xs={3}>Timestamp To</Grid>
   </Grid>
 
-  {/* TABLE ROWS */}
+  {/* ROWS */}
   {summaryRows.length > 0 ? (
-  summaryRows.map((row) => {
-    const rowId = row.rowId; // already stored
+    summaryRows.map((row, idx) => {
+      const rowId = `${row.batch}-${row.phase}-${row.timestamp_from}-${row.timestamp_to}`;
 
-    return (
-      <Grid
-        container
-        key={rowId}
-        sx={{
-          borderBottom: "1px solid #eee",
-          py: 1,
-          alignItems: "center"
-        }}
-      >
-        {/* Checkbox */}
-        <Grid item xs={1}>
-          <Checkbox
-            size="small"
-            checked={selectedSummaryRows.includes(rowId)}
-            onChange={() => handleSummaryRowToggle(rowId)}
-          />
-        </Grid>
+      const isNewInterval =
+        idx === 0 ||
+        summaryRows[idx].interval_start !== summaryRows[idx - 1].interval_start;
 
-        <Grid item xs={2}>
-          <Typography variant="body2">{row.batch}</Typography>
-        </Grid>
+      return (
+        <React.Fragment key={rowId}>
+          {/* Horizontal line between missing-value intervals */}
+          {isNewInterval && idx !== 0 && (
+            <Divider sx={{ my: 1, borderColor: "#aaa" }} />
+          )}
 
-        <Grid item xs={3}>
-          <Typography variant="body2">{row.phase || "-"}</Typography>
-        </Grid>
+          <Grid
+            container
+            sx={{
+              py: 1,
+              borderBottom: "1px solid #eee",
+              alignItems: "center"
+            }}
+          >
+            {/* Checkbox */}
+            <Grid item xs={1}>
+              <Checkbox
+                size="small"
+                checked={selectedSummaryRows.includes(rowId)}
+                onChange={() => handleSummaryRowToggle(rowId)}
+              />
+            </Grid>
 
-        <Grid item xs={3}>
-          <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-            {row.timestamp_from}
-          </Typography>
-        </Grid>
+            <Grid item xs={2}>
+              <Typography variant="body2">{row.batch}</Typography>
+            </Grid>
 
-        <Grid item xs={3}>
-          <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-            {row.timestamp_to}
-          </Typography>
-        </Grid>
-      </Grid>
-    );
-  })
-) : (
-  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-    No summarized rows found.
-  </Typography>
-)}
+            <Grid item xs={2}>
+              <Typography variant="body2">{row.phase || "-"}</Typography>
+            </Grid>
 
+            <Grid item xs={3}>
+              <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                {row.timestamp_from}
+              </Typography>
+            </Grid>
+
+            <Grid item xs={3}>
+              <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                {row.timestamp_to}
+              </Typography>
+            </Grid>
+          </Grid>
+        </React.Fragment>
+      );
+    })
+  ) : (
+    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+      No summarized rows found.
+    </Typography>
+  )}
 </Grid>
+
 
 
 
