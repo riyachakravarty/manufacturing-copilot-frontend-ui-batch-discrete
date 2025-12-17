@@ -401,38 +401,25 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
     );
   };
 
-  const handleSummaryRowToggle = (row) => {
-  const exists = selectedSummaryRows.some(
-    r =>
-      r.batch === row.batch &&
-      r.phase === row.phase &&
-      r.timestamp_from === row.timestamp_from &&
-      r.timestamp_to === row.timestamp_to
+  const handleSummaryRowToggle = (rowId) => {
+  setSelectedSummaryRows((prev) =>
+    prev.includes(rowId)
+      ? prev.filter((id) => id !== rowId)
+      : [...prev, rowId]
   );
-
-  let updated;
-  if (exists) {
-    updated = selectedSummaryRows.filter(
-      r =>
-        !(
-          r.batch === row.batch &&
-          r.phase === row.phase &&
-          r.timestamp_from === row.timestamp_from &&
-          r.timestamp_to === row.timestamp_to
-        )
-    );
-  } else {
-    updated = [...selectedSummaryRows, row];
-  }
-
-  setSelectedSummaryRows(updated);
-  setSelectAllSummaryRows(updated.length === summaryRows.length);
 };
 
 const handleSelectAllSummaryRows = () => {
-  const newValue = !selectAllSummaryRows;
-  setSelectAllSummaryRows(newValue);
-  setSelectedSummaryRows(newValue ? [...summaryRows] : []);
+  if (selectAllSummaryRows) {
+    setSelectedSummaryRows([]);
+  } else {
+    const allIds = summaryRows.map(
+      (row) =>
+        `${row.batch}-${row.phase}-${row.timestamp_from}-${row.timestamp_to}`
+    );
+    setSelectedSummaryRows(allIds);
+  }
+  setSelectAllSummaryRows(!selectAllSummaryRows);
 };
 
 
@@ -1545,10 +1532,12 @@ const handleSelectAllSummaryRows = () => {
 
   {/* TABLE ROWS */}
   {summaryRows.length > 0 ? (
-    summaryRows.map((row, idx) => (
+  summaryRows.map((row, idx) => {
+    
+    const rowId = `${row.batch}-${row.phase}-${row.timestamp_from}-${row.timestamp_to}`;
       <Grid
         container
-        key={idx}
+        key={rowId}
         sx={{
           borderBottom: "1px solid #eee",
           py: 1,
@@ -1559,28 +1548,39 @@ const handleSelectAllSummaryRows = () => {
         <Grid item xs={1}>
           <Checkbox
             size="small"
-            checked={selectedSummaryRows.some(
-              (r) =>
-                r.batch === row.batch &&
-                r.phase === row.phase &&
-                r.timestamp_from === row.timestamp_from &&
-                r.timestamp_to === row.timestamp_to
-            )}
-            onChange={() => handleSummaryRowToggle(row)}
+            checked={selectedSummaryRows.includes(rowId)}
+            onChange={() => handleSummaryRowToggle(rowId)}
           />
         </Grid>
 
-        <Grid item xs={2}>{row.batch}</Grid>
-        <Grid item xs={3}>{row.phase}</Grid>
-        <Grid item xs={3}>{row.timestamp_from}</Grid>
-        <Grid item xs={3}>{row.timestamp_to}</Grid>
+        <Grid item xs={2}>
+          <Typography variant="body2">{row.batch}</Typography>
+        </Grid>
+
+        <Grid item xs={3}>
+          <Typography variant="body2">{row.phase || "-"}</Typography>
+        </Grid>
+
+        <Grid item xs={3}>
+          <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+            {row.timestamp_from}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={3}>
+          <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+            {row.timestamp_to}
+          </Typography>
+        </Grid>
+
       </Grid>
-    ))
-  ) : (
-    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-      No summarized rows found.
-    </Typography>
-  )}
+    ;
+  })
+) : (
+  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+    No summarized rows found.
+  </Typography>
+)}
 </Grid>
 
 
