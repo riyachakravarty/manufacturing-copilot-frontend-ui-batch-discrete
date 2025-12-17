@@ -322,22 +322,29 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
           `${BACKEND_URL}/missing_value_intervals?column=${selectedMissingValueColumn}`
         );
         if (!res.ok) throw new Error("Failed to fetch summary table");
-        
+
         const data = await res.json();
+
         if (data.table) {
-          setSummaryRows(
-            data.table.map(r => ({
+          const rows = data.table.map(r => {
+            const rowId = `${r.Batch_No}-${r.Phase_Name}-${r.Timestamp_From}-${r.Timestamp_To}`;
+
+            return {
+              rowId,
               batch: r.Batch_No,
               phase: r.Phase_Name,
               timestamp_from: r.Timestamp_From,
-              timestamp_to: r.Timestamp_To
-      }))
-    );
-}
+              timestamp_to: r.Timestamp_To,
+              interval_start: r.Interval_Start,
+              interval_end: r.Interval_End
+            };
+          });
 
-         else {
+          setSummaryRows(rows);
+        } else {
           setSummaryRows([]);
         }
+
       } catch (err) {
         console.error("Error loading summary rows:", err);
         setSummaryRows([]);
@@ -350,6 +357,8 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
     setSelectedSummaryRows([]);
   }
 }, [selectedMissingValueColumn]);
+
+
 
 
 
@@ -401,13 +410,16 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
     );
   };
 
+  
+
   const handleSummaryRowToggle = (rowId) => {
-  setSelectedSummaryRows((prev) =>
-    prev.includes(rowId)
-      ? prev.filter((id) => id !== rowId)
-      : [...prev, rowId]
-  );
-};
+    setSelectedSummaryRows((prev) =>
+      prev.includes(rowId)
+        ? prev.filter((id) => id !== rowId)
+        : [...prev, rowId]
+    );
+  };
+
 
 const handleSelectAllSummaryRows = () => {
   if (selectAllSummaryRows) {
@@ -1532,9 +1544,10 @@ const handleSelectAllSummaryRows = () => {
 
   {/* TABLE ROWS */}
   {summaryRows.length > 0 ? (
-  summaryRows.map((row, idx) => {
-    
-    const rowId = `${row.batch}-${row.phase}-${row.timestamp_from}-${row.timestamp_to}`;
+  summaryRows.map((row) => {
+    const rowId = row.rowId; // already stored
+
+    return (
       <Grid
         container
         key={rowId}
@@ -1572,15 +1585,15 @@ const handleSelectAllSummaryRows = () => {
             {row.timestamp_to}
           </Typography>
         </Grid>
-
       </Grid>
-    ;
+    );
   })
 ) : (
   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
     No summarized rows found.
   </Typography>
 )}
+
 </Grid>
 
 
