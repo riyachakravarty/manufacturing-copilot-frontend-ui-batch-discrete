@@ -327,6 +327,7 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
         if (data.table) {
           setSummaryRows(
             data.table.map(r => ({
+              id: r.Row_ID,
               batch: r.Batch_No,
               phase: r.Phase_Name,
               timestamp_from: r.Timestamp_From,
@@ -417,10 +418,7 @@ const handleSelectAllSummaryRows = () => {
   if (selectAllSummaryRows) {
     setSelectedSummaryRows([]);
   } else {
-    const allIds = summaryRows.map(
-      (row) =>
-        `${row.batch}-${row.phase}-${row.timestamp_from}-${row.timestamp_to}`
-    );
+    const allIds = summaryRows.map((row) => row.id);
     setSelectedSummaryRows(allIds);
   }
   setSelectAllSummaryRows(!selectAllSummaryRows);
@@ -1525,34 +1523,37 @@ const handleSelectAllSummaryRows = () => {
   />
 
   {/* HEADER */}
-  <Grid
-    container
-    sx={{
-      fontWeight: "bold",
-      borderBottom: "2px solid #ccc",
-      pb: 1,
-      mb: 1,
-      textAlign: "left"
-    }}
-  >
-    <Grid item xs={1}></Grid>
-    <Grid item xs={2}>Batch</Grid>
-    <Grid item xs={2}>Phase</Grid>
-    <Grid item xs={3}>Timestamp From</Grid>
-    <Grid item xs={3}>Timestamp To</Grid>
+  <Grid container sx={{ fontWeight: "bold", borderBottom: "1px solid #ccc", pb: 1 }}>
+  <Grid item xs={1}></Grid>
+
+  <Grid item xs={2}>
+    <Typography variant="subtitle2" sx={{ pl: 1 }}>Batch</Typography>
   </Grid>
+
+  <Grid item xs={2}>
+    <Typography variant="subtitle2" sx={{ pl: 1 }}>Phase</Typography>
+  </Grid>
+
+  <Grid item xs={3}>
+    <Typography variant="subtitle2" sx={{ pl: 1 }}>Timestamp From</Typography>
+  </Grid>
+
+  <Grid item xs={3}>
+    <Typography variant="subtitle2" sx={{ pl: 1 }}>Timestamp To</Typography>
+  </Grid>
+</Grid>
 
   {/* ROWS */}
   {summaryRows.length > 0 ? (
     summaryRows.map((row, idx) => {
-      const rowId = `${row.batch}-${row.phase}-${row.timestamp_from}-${row.timestamp_to}`;
 
       const isNewInterval =
         idx === 0 ||
-        summaryRows[idx].interval_start !== summaryRows[idx - 1].interval_start;
+        (summaryRows[idx].interval_start !== summaryRows[idx - 1].interval_start &&
+        summaryRows[idx].interval_end !== summaryRows[idx - 1].interval_end);
 
       return (
-        <React.Fragment key={rowId}>
+        <React.Fragment key={row.id}>
           {/* Horizontal line between missing-value intervals */}
           {isNewInterval && idx !== 0 && (
             <Divider sx={{ my: 1, borderColor: "#aaa" }} />
@@ -1570,30 +1571,30 @@ const handleSelectAllSummaryRows = () => {
             <Grid item xs={1}>
               <Checkbox
                 size="small"
-                checked={selectedSummaryRows.includes(rowId)}
-                onChange={() => handleSummaryRowToggle(rowId)}
+                checked={selectedSummaryRows.includes(row.id)}
+                onChange={() => handleSummaryRowToggle(row.id)}
               />
             </Grid>
 
             <Grid item xs={2}>
-              <Typography variant="body2">{row.batch}</Typography>
-            </Grid>
+          <Typography variant="body2" sx={{ pl: 1 }}>{row.batch}</Typography>
+        </Grid>
 
-            <Grid item xs={2}>
-              <Typography variant="body2">{row.phase || "-"}</Typography>
-            </Grid>
+        <Grid item xs={2}>
+          <Typography variant="body2" sx={{ pl: 1 }}>{row.phase || "-"}</Typography>
+        </Grid>
 
-            <Grid item xs={3}>
-              <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-                {row.timestamp_from}
-              </Typography>
-            </Grid>
+        <Grid item xs={3}>
+          <Typography variant="body2" sx={{ pl: 1, whiteSpace: "nowrap" }}>
+            {row.timestamp_from}
+          </Typography>
+        </Grid>
 
-            <Grid item xs={3}>
-              <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-                {row.timestamp_to}
-              </Typography>
-            </Grid>
+        <Grid item xs={3}>
+          <Typography variant="body2" sx={{ pl: 1, whiteSpace: "nowrap" }}>
+            {row.timestamp_to}
+          </Typography>
+        </Grid>
           </Grid>
         </React.Fragment>
       );
