@@ -354,9 +354,7 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
 
 // AUTO-RUN Missing Value Analysis when a column is selected
   useEffect(() => {
-  if (!selectedMissingValueColumn) {
-    return; // do nothing if user hasn't selected a column
-  }
+  if (!selectedMissingValueColumn || treatmentMode !== "column") return;
 
   const runAutoMissingValueAnalysis = async () => {
     setLoading(true);
