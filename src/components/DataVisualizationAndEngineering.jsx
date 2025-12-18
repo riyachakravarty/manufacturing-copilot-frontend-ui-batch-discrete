@@ -354,45 +354,41 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
 
 // AUTO-RUN Missing Value Analysis when a column is selected
   useEffect(() => {
-  if (!selectedMissingValueColumn || treatmentMode !== "column") return;
+  if (!selectedMissingValueColumn) return; // Run only when a column is selected
 
   const runAutoMissingValueAnalysis = async () => {
-    setLoading(true);
-    setError("");
-    setPlotData(null);
-
     try {
+      setLoading(true);
+      setError("");
+
       const prompt = `Missing value analysis where selected variable is '${selectedMissingValueColumn}'`;
 
-      const response = await fetch(`${BACKEND_URL}/chat`, {
+      const res = await fetch(`${BACKEND_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
-      const data = await response.json();
+      const data = await res.json();
 
       if (data.type === "plot" && data.data) {
-        setPlotData(data.data);
-        setExpanded(false); // collapse left accordion for better visualization
-      } else {
-        setError("Unexpected response from server.");
+        setPlotData(data.data);   // <-- keep plot visible
       }
 
     } catch (err) {
       console.error("Auto Missing Value Analysis failed:", err);
-      setError("Error running missing value analysis automatically.");
+      setError("Failed to generate missing value plot.");
     } finally {
       setLoading(false);
     }
   };
 
   runAutoMissingValueAnalysis();
+
 }, [selectedMissingValueColumn]);
+
 
 
   // Auto-load outlier intervals when a column is selected
