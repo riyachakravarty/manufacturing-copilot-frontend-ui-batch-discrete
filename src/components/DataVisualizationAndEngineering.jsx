@@ -869,7 +869,7 @@ const handleSelectAllSummaryRows = () => {
           alert("Please select a column.");
           return;
         }
-        if (!selectedMissingValueIntervals.length) {
+        if (!selectedSummaryRows.length) {
           alert("Please select at least one missing value interval.");
           return;
         }
