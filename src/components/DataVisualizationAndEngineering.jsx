@@ -880,8 +880,8 @@ const handleSelectAllSummaryRows = () => {
 
         payload = {
           column: selectedMissingValueColumn,
-          intervals: selectedMissingValueIntervals,
-          method: treatmentMethod,
+          intervals: selectedSummaryRows,
+          method: missingValueTreatmentMethod,
         };
         endpoint = `${BACKEND_URL}/apply_missing_value_treatment`;
 
@@ -1463,6 +1463,55 @@ const handleSelectAllSummaryRows = () => {
                 sx={{ fontSize: "0.85rem" }}
               />
             ))}
+          </FormGroup>
+        </Grid>
+
+        {/* Intervals List with Select All */}
+        <Grid
+          item
+          xs={4}
+          sx={{ maxHeight: 200, overflowY: "auto", borderRight: "1px solid #ccc", pl: 1 }}
+        >
+          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
+            Intervals
+          </Typography>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={selectAllDateTimeIntervals}
+                  onChange={handleSelectAllDateTimeIntervals}
+                />
+              }
+              label="Select All"
+              sx={{ fontSize: "0.85rem" }}
+            />
+            {missingDateTimeIntervals.length > 0 ? (
+              missingDateTimeIntervals.map((interval) => {
+                const checked = treatmentSelectedIntervals.some(
+                  (i) => i.start === interval.start && i.end === interval.end
+                );
+                return (
+                  <FormControlLabel
+                    key={`${interval.start}-${interval.end}`}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={checked}
+                        onChange={() => handleTreatmentIntervalToggle(interval)}
+                      />
+                    }
+                    label={`${interval.start} → ${interval.end}`}
+                    sx={{ fontSize: "0.85rem" }}
+                  />
+                );
+              })
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                No missing datetime intervals found.
+              </Typography>
+            )}
           </FormGroup>
         </Grid>
 
