@@ -1872,21 +1872,25 @@ const handleSelectAllSummaryRows = () => {
                 />
               </RadioGroup>
 
-              <Box sx={{ px: 2, mt: 2 }}>
-          <Typography gutterBottom>
-            Select batches to display with greater than xx% of outliers: {percOutliersInBatch}%
-          </Typography>
+             <Box sx={{ px: 2, mt: 2 }}>
+  <Typography gutterBottom>
+    Select batches to display with greater than xx% of outliers: {percOutliersInBatch}%
+  </Typography>
 
-              <Slider
-            value={percOutliersInBatch}
-            onChange={(e, newValue) => setPercOutliersInBatch(newValue)}
-            aria-labelledby="outlier-perc-slider"
-            step={1}
-            min={0}
-            max={100}
-            valueLabelDisplay="auto"
-          />
-          </Box>
+  <Slider
+    value={Number(percOutliersInBatch || 0)}
+    onChange={(e, newValue) => {
+      if (typeof newValue === "number") {
+        setPercOutliersInBatch(newValue);
+      }
+    }}
+    aria-labelledby="outlier-perc-slider"
+    step={1}
+    min={0}
+    max={100}
+    valueLabelDisplay="auto"
+  />
+</Box>
 
               {/* Run Button */}
               <Button
