@@ -30,6 +30,7 @@ import {
   MenuItem,
   Select,
   IconButton,
+  Slider
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -56,8 +57,12 @@ export default function DataVisualizationAndEngineering() {
   // Other UI states
   const [missingValueColumn, setMissingValueColumn] = useState("");
   const [treatmentMode, setTreatmentMode] = useState("datetime");
+  const [outlierAnalysisType, setOutlierAnalysisType] = useState("overall");
   const [outlierColumn, setOutlierColumn] = useState("");
   const [outlierMethod, setOutlierMethod] = useState("zscore");
+  const [setPercOutliersInBatch, percOutliersInBatch] = useState(20);
+  const [outlierPhase, setOutlierPhase] = useState(""); 
+  const [availablePhases, setAvailablePhases] = useState([]);
   //const [outlierPlot, setOutlierPlot] = useState(null);
 
   // For treatment cards
@@ -416,6 +421,27 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
     }
   }, [outlierSelectedColumns,outlierMethod]);
 
+  //Auto populate phases for outlier analysis when "phasewise" is selected
+  useEffect(() => {
+  if (outlierAnalysisType === "phasewise") {
+    const fetchPhases = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/get_phases`);
+        const data = await res.json();
+
+        if (data.phases) {
+          setAvailablePhases(data.phases);
+        }
+      } catch (err) {
+        console.error("Error fetching phases:", err);
+      }
+    };
+
+    fetchPhases();
+  }
+}, [outlierAnalysisType]);
+
+
   // Toggle for interval checkboxes in "Missing Values in Column" mode
   //const handleMissingValueIntervalToggle = (interval) => {
     //setSelectedMissingValueIntervals((prev) => {
@@ -635,31 +661,49 @@ const handleSelectAllSummaryRows = () => {
   };
 
   const runOutlierAnalysis = async () => {
-    if (!outlierColumn) {
-      alert("Please select a column for outlier analysis.");
-      return;
-    }
+  if (!outlierColumn) {
+    alert("Please select a column.");
+    return;
+  }
 
-    try {
-      const prompt = `outlier analysis where selected variable is ${outlierColumn} using method ${outlierMethod}`;
-      const response = await fetch(`${BACKEND_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
+  if (!outlierMethod) {
+    alert("Please select an outlier detection method.");
+    return;
+  }
 
-      const result = await response.json();
+  if (outlierAnalysisType === "phasewise" && !outlierPhase) {
+    alert("Please select a phase for phasewise analysis.");
+    return;
+  }
 
-      if (result.type === "plot" && result.data) {
-        setPlotData(result.data);   // Same as missing value analysis
-        setExpanded(false);         // Collapse left panel like before
-      } else {
-        console.error("Unexpected response format:", result);
-      }
-    } catch (err) {
-      console.error("Error running outlier analysis:", err.message);
-    }
+  const payload = {
+    analysis_type: outlierAnalysisType,
+    column: outlierColumn,
+    method: outlierMethod,
+    percOutliersInBatch,
+    phase: outlierPhase || null  // IMPORTANT FOR BACKEND
   };
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/outlier_analysis`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (data.type === "plot") {
+      setPlotData(data.data);
+      setExpanded(false);
+    } else {
+      alert(data.message || "No outliers found.");
+    }
+  } catch (err) {
+    console.error("OError running outlier analysis:", err.message);
+  }
+};
+
 
   // Treatment cards handlers
   const handleTreatmentColumnToggle = (col) => {
@@ -1743,7 +1787,28 @@ const handleSelectAllSummaryRows = () => {
                 maxHeight: 300,
                 pr: 1,
               }}
-            >
+            ><RadioGroup
+                row
+                value={outlierAnalysisType}
+                onChange={(e) => setOutlierAnalysisType(e.target.value)}
+                sx={{ mb: 1 }}
+              >
+                <FormControlLabel
+                  value="overall"
+                  control={<Radio size="small" />}
+                  label="Analysis over batch duration"
+                  sx={{ fontSize: "0.85rem" }}
+                />
+                <FormControlLabel
+                  value="phasewise"
+                  control={<Radio size="small" />}
+                  label="Analysis over phase duration"
+                  sx={{ fontSize: "0.85rem" }}
+                />
+              </RadioGroup>
+
+
+
               {/* Column Selection */}
               <RadioGroup
                 value={outlierColumn}
@@ -1760,6 +1825,32 @@ const handleSelectAllSummaryRows = () => {
                   />
                 ))}
               </RadioGroup>
+
+              {/* Phase Selection (only for phasewise) */}
+              {outlierAnalysisType === "phasewise" && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" sx={{ fontWeight: "bold", mb: 1 }}>
+                    Select Phase
+                  </Typography>
+
+                  <Select
+                    size="small"
+                    fullWidth
+                    value={outlierPhase}
+                    onChange={(e) => setOutlierPhase(e.target.value)}
+                  >
+                    {availablePhases.length > 0 ? (
+                      availablePhases.map((p) => (
+                        <MenuItem key={p} value={p}>
+                          {p}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem disabled>No phases available</MenuItem>
+                    )}
+                  </Select>
+                </Box>
+              )}
 
               {/* Method Selection */}
               <RadioGroup
@@ -1780,6 +1871,22 @@ const handleSelectAllSummaryRows = () => {
                   sx={{ fontSize: "0.85rem" }}
                 />
               </RadioGroup>
+
+              <Box sx={{ px: 2, mt: 2 }}>
+          <Typography gutterBottom>
+            Select batches to display with greater than xx% of outliers: {percOutliersInBatch}%
+          </Typography>
+
+              <Slider
+            value={percOutliersInBatch}
+            onChange={(e, newValue) => setPercOutliersInBatch(newValue)}
+            aria-labelledby="outlier-perc-slider"
+            step={1}
+            min={0}
+            max={100}
+            valueLabelDisplay="auto"
+          />
+          </Box>
 
               {/* Run Button */}
               <Button
