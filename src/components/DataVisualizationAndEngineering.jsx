@@ -60,7 +60,7 @@ export default function DataVisualizationAndEngineering() {
   const [outlierAnalysisType, setOutlierAnalysisType] = useState("overall");
   const [outlierColumn, setOutlierColumn] = useState("");
   const [outlierMethod, setOutlierMethod] = useState("zscore");
-  const [setPercOutliersInBatch, percOutliersInBatch] = useState(20);
+  const [percOutliersInBatch, setPercOutliersInBatch] = useState(20);
   const [outlierPhase, setOutlierPhase] = useState(""); 
   const [availablePhases, setAvailablePhases] = useState([]);
   //const [outlierPlot, setOutlierPlot] = useState(null);
