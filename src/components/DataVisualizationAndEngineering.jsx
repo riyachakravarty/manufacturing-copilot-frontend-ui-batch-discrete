@@ -2204,7 +2204,7 @@ const applyOutlierTreatment = async () => {
             <Grid item xs={1}>
               <Checkbox
                 size="small"
-                checked={selectedSummaryOutlierRows.includes(row.id)}
+                checked={selectedOutlierSummaryRows.includes(row.id)}
                 onChange={() => handleSummaryOutlierRowToggle(row.id)}
               />
             </Grid>
