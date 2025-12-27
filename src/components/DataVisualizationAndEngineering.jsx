@@ -87,6 +87,10 @@ export default function DataVisualizationAndEngineering() {
   const [outlierIntervals, setOutlierIntervals] = useState([]);
   const [outlierSelectedIntervals, setOutlierSelectedIntervals] = useState([]);
   const [outlierTreatmentMethod, setOutlierTreatmentMethod] = useState("Mean");
+  const [outlierTreatmentType, setOutlierTreatmentType] = useState("overall");
+  const [selectAllOutlierSummaryRows, setSelectAllOutlierSummaryRows] = useState(false);
+  const [selectedOutlierSummaryRows, setSelectedOutlierSummaryRows] = useState([]);
+  const [summaryOutlierRows, setSummaryOutlierRows] = useState([]);
 
   // Missing value in column treatment mode 
   const [missingValueColumns, setMissingValueColumns] = useState([]);
@@ -396,13 +400,14 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
 
 
 
-  // Auto-load outlier intervals when a column is selected
+  // Auto-load utlier intervals when a column is selected in outlier treatment
   useEffect(() => {
-    if (outlierSelectedColumns && outlierMethod) {
+    if (outlierSelectedColumns && outlierMethod && outlierTreatmentType) {
       const fetchIntervals = async () => {
         try {
           const res = await fetch(
-            `${BACKEND_URL}/outlier_intervals?column=${encodeURIComponent(outlierSelectedColumns)}&method=${encodeURIComponent(outlierMethod)}`
+            `${BACKEND_URL}/outlier_intervals?column=${encodeURIComponent(outlierSelectedColumns)}&method=${encodeURIComponent(outlierMethod)}
+            &TreatmentType=${encodeURIComponent(outlierTreatmentType)}`
           );
           if (!res.ok) throw new Error("Failed to fetch outlier intervals");
           const data = await res.json();
@@ -419,7 +424,8 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
       setOutlierIntervals([]);
       setOutlierSelectedIntervals([]);
     }
-  }, [outlierSelectedColumns,outlierMethod]);
+  }, [outlierSelectedColumns,outlierMethod, outlierTreatmentType]);
+
 
   //Auto populate phases for outlier analysis when "phasewise" is selected
   useEffect(() => {
@@ -440,6 +446,71 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
     fetchPhases();
   }
 }, [outlierAnalysisType]);
+
+// Auto-load timestamps when a column for outlier treatment is selected
+
+  useEffect(() => {
+    // Phasewise requires a selected phase
+    const isPhaseRequired =
+      outlierTreatmentType === "phasewise" && !outlierPhase;
+
+    if (
+      outlierSelectedColumns &&
+      outlierMethod &&
+      outlierTreatmentType &&
+      !isPhaseRequired
+    ) {
+      const fetchOutlierSummaryTable = async () => {
+        try {
+          const payload = {
+            column: outlierSelectedColumns,
+            method: outlierMethod,
+            analysis_type: outlierTreatmentType,
+            phase: outlierTreatmentType === "phasewise" ? outlierPhase : null
+          };
+
+          const res = await fetch(`${BACKEND_URL}/outlier_intervals_summary`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) throw new Error("Failed to fetch outlier summary table");
+
+          const data = await res.json();
+
+          if (data.table) {
+            setSummaryOutlierRows(
+              data.table.map((r) => ({
+                id: r.Row_ID,
+                batch: r.Batch_No,
+                phase: r.Phase_Name,
+                timestamp: r.Timestamp,
+                counter: r.Counter
+              }))
+            );
+          } else {
+            setSummaryOutlierRows([]);
+          }
+        } catch (err) {
+          console.error("Error loading outlier summary rows:", err);
+          setSummaryOutlierRows([]);
+        }
+      };
+
+      fetchOutlierSummaryTable();
+    } else {
+      // reset when selection incomplete
+      setSummaryOutlierRows([]);
+      setSelectedOutlierSummaryRows([]);
+    }
+  }, [
+    outlierSelectedColumns,
+    outlierMethod,
+    outlierTreatmentType,
+    outlierPhase
+  ]);
+
 
 
   // Toggle for interval checkboxes in "Missing Values in Column" mode
@@ -486,6 +557,23 @@ const handleSelectAllSummaryRows = () => {
   setSelectAllSummaryRows(!selectAllSummaryRows);
 };
 
+const handleSelectAllOutlierSummaryRows = () => {
+  if (selectAllOutlierSummaryRows) {
+    setSelectedOutlierSummaryRows([]);
+  } else {
+    const allIds = summaryOutlierRows.map((row) => row.id);
+    setSelectedOutlierSummaryRows(allIds);
+  }
+  setSelectAllOutlierSummaryRows(!selectAllSummaryRows);
+};
+
+  const handleSummaryOutlierRowToggle = (rowId) => {
+    setSelectedOutlierSummaryRows((prev) =>
+      prev.includes(rowId)
+        ? prev.filter((id) => id !== rowId)
+        : [...prev, rowId]
+    );
+  };
 
   // Batch profiling
   const runBatchProfiling = async () => {
@@ -973,59 +1061,98 @@ const handleSelectAllSummaryRows = () => {
   };
 
 // Apply outlier treatment
-  const applyOutlierTreatment = async () => {
-    let endpoint = "";
-    let payload = {};
+  // Apply Outlier Treatment
+const applyOutlierTreatment = async () => {
+  try {
+    // -------------------------
+    //  VALIDATIONS
+    // -------------------------
 
-    try {
-        if (!outlierSelectedColumns) {
-          alert("Please select a column.");
-          return;
-        }
-        if (!outlierSelectedIntervals.length) {
-          alert("Please select at least one outlier interval.");
-          return;
-        }
-        if (!treatmentMethod) {
-          alert("Please select a treatment method.");
-          return;
-        }
+    // 1) Column must be selected
+    if (!outlierSelectedColumns) {
+      alert("Please select a column for outlier treatment.");
+      return;
+    }
 
-        payload = {
-          column: outlierSelectedColumns,
-          intervals: outlierSelectedIntervals,
-          method: outlierTreatmentMethod,
-        };
-        endpoint = `${BACKEND_URL}/apply_outlier_treatment`;
+    // 2) Method (zscore or iqr) must be selected
+    if (!outlierMethod) {
+      alert("Please select an outlier detection method.");
+      return;
+    }
 
-      // Make API request
-    const response = await fetch(endpoint, {
+    // 3) Treatment type must be selected (overall / phasewise)
+    if (!outlierTreatmentType) {
+      alert("Please select outlier analysis type (overall / phasewise).");
+      return;
+    }
+
+    // 4) At least one outlier row must be selected for treatment
+    if (!selectedOutlierSummaryRows.length) {
+      alert("Please select at least one outlier interval to treat.");
+      return;
+    }
+
+    // 5) Treatment method must be selected
+    if (!outlierTreatmentMethod) {
+      alert("Please select an outlier treatment method.");
+      return;
+    }
+
+    // 6) If phasewise → phase must be selected
+    let selectedPhaseToSend = null;
+    if (outlierTreatmentType === "phasewise") {
+      if (!outlierPhase) {
+        alert("Please select a phase for phasewise outlier treatment.");
+        return;
+      }
+      selectedPhaseToSend = outlierPhase;
+    }
+
+    // -------------------------
+    //  BUILD PAYLOAD
+    // -------------------------
+
+    const payload = {
+      analysis_type: outlierTreatmentType,          // "overall" | "phasewise"
+      column: outlierSelectedColumns,               // column name
+      selected_row_ids: selectedOutlierSummaryRows, // list of row IDs
+      method: outlierTreatmentMethod,               // Mean, Median, etc.
+      phase: selectedPhaseToSend                    // null for overall
+    };
+
+    console.log("Sending payload:", payload);
+
+    // -------------------------
+    //  SEND REQUEST
+    // -------------------------
+    const response = await fetch(`${BACKEND_URL}/apply_outlier_treatment`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
-      if (!response.ok) {
-        throw new Error(`Error applying treatment: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log("API returned:", data);
-      alert(data.message || "Treatment applied successfully!");
-      console.log("Treatment response:", data);
-
-      // Trigger post-treatment prompt
-      setPostTreatmentMode("outlier");
-      handlePostTreatmentFlow(data);
-      setLatestAugmentedDf(data);
-
-    } catch (error) {
-      console.error("Error applying outlier treatment:", error);
-      setError("Error applying outlier treatment: " + error.message);
-    } finally {
-      setLoadingTreatment(false);
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
     }
-  };
+
+    const data = await response.json();
+    console.log("Outlier Treatment Response:", data);
+
+    alert(data.message || "Outlier treatment applied successfully!");
+
+    // UI updates
+    setPostTreatmentMode("outlier");
+    handlePostTreatmentFlow(data);
+    setLatestAugmentedDf(data);
+
+  } catch (error) {
+    console.error("Error applying outlier treatment:", error);
+    setError("Error applying outlier treatment: " + error.message);
+  } finally {
+    setLoadingTreatment(false);
+  }
+};
+
 
   return (
     <Grid container spacing={2} sx={{ height: "calc(100vh - 100px)", flexWrap: "nowrap" }}>
@@ -1761,10 +1888,12 @@ const handleSelectAllSummaryRows = () => {
             size="small"
             sx={{ mt: 2 }}
             onClick={applyMissingValueTreatment}
+            Apply Missing Value Treatment
             disabled={loadingTreatment}
           >
             {loadingTreatment ? "Applying..." : "Apply Treatment"}
           </Button>
+          
         </Grid>
       </Grid>
     )}
@@ -1912,8 +2041,33 @@ const handleSelectAllSummaryRows = () => {
                 Outlier Treatment
               </Typography>
             </AccordionSummary>
-            <AccordionDetails>
-              <Grid container spacing={2}>
+            <AccordionDetails
+              sx={{
+                maxWidth: 300,
+                overflowY: "auto",
+                maxHeight: 300,
+                pr: 1,
+              }}
+            ><RadioGroup
+                row
+                value={outlierTreatmentType}
+                onChange={(e) => setOutlierTreatmentType(e.target.value)}
+                sx={{ mb: 1 }}
+              >
+                <FormControlLabel
+                  value="overall"
+                  control={<Radio size="small" />}
+                  label="Treatment over batch duration"
+                  sx={{ fontSize: "0.85rem" }}
+                />
+                <FormControlLabel
+                  value="phasewise"
+                  control={<Radio size="small" />}
+                  label="Treatment over phase duration"
+                  sx={{ fontSize: "0.85rem" }}
+                />
+              </RadioGroup>
+
                 {/* Column List */}
                 <Grid
                   item
@@ -1941,7 +2095,33 @@ const handleSelectAllSummaryRows = () => {
                   </FormGroup>
                 </Grid>
 
-                <Typography variant="caption" sx={{ fontWeight: "bold", mt: 2 }}>
+                {/* Phase Selection (only for phasewise) */}
+              {outlierTreatmentType === "phasewise" && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" sx={{ fontWeight: "bold", mb: 1 }}>
+                    Select Phase
+                  </Typography>
+
+                  <Select
+                    size="small"
+                    fullWidth
+                    value={outlierPhase}
+                    onChange={(e) => setOutlierPhase(e.target.value)}
+                  >
+                    {availablePhases.length > 0 ? (
+                      availablePhases.map((p) => (
+                        <MenuItem key={p} value={p}>
+                          {p}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem disabled>No phases available</MenuItem>
+                    )}
+                  </Select>
+                </Box>
+              )}
+
+               <Typography variant="caption" sx={{ fontWeight: "bold", mt: 2 }}>
                   Outlier Detection Method
                 </Typography>
                 <RadioGroup
@@ -1960,57 +2140,98 @@ const handleSelectAllSummaryRows = () => {
                   />
                 </RadioGroup>
 
+              {/* Intervals List with Select All */}
+        <Grid
+  item
+  xs={12}
+  sx={{
+    maxHeight: 350,
+    overflowY: "auto",
+    p: 2,
+    border: "1px solid #ccc",
+    borderRadius: 2,
+    mt: 2,
+    backgroundColor: "#fafafa"
+  }}
+>
+  <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
+    Outliers Summary Table
+  </Typography>
 
-                {/* Interval List */}
-                <Grid
-                  item
-                  xs={6}
-                  sx={{
-                    maxHeight: 200,
-                    overflowY: "auto",
-                    borderRight: "1px solid #ccc",
-                    pr: 1,
-                  }}
-                >
-                  <Typography variant="caption" sx={{ fontWeight: "bold" }}>
-                    Outlier Intervals
-                  </Typography>
-                  <FormGroup>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          size="small"
-                          checked={selectAllOutlierIntervals}
-                          onChange={handleSelectAllOutlierIntervals}
-                        />
-                      }
-                      label="Select All"
-                      sx={{ fontSize: "0.85rem" }}
-                    />
-                    {outlierIntervals.length > 0 ? (
-                      outlierIntervals.map((interval, idx) => (
-                        <FormControlLabel
-                          key={`${interval.start}-${interval.end}`}
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={outlierSelectedIntervals.some(
-                                (i) => i.start === interval.start && i.end === interval.end
-                              )}
-                            onChange={() => handleOutlierIntervalToggle(interval)}
-                          />
-                        }
-                        label={`${interval.start} → ${interval.end}`}
-                        sx={{ fontSize: "0.85rem" }}
-                      />
-                    ))
-                  ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      No Outlier intervals found.
-                    </Typography>
-                  )}
-                  </FormGroup>
-                </Grid>
+  {/* SELECT ALL */}
+  <FormControlLabel
+    control={
+      <Checkbox
+        size="small"
+        checked={selectAllOutlierSummaryRows}
+        onChange={handleSelectAllOutlierSummaryRows}
+      />
+    }
+    label="Select All"
+    sx={{ mb: 2 }}
+  />
+
+  {/* HEADER */}
+  <Grid container sx={{ fontWeight: "bold", borderBottom: "1px solid #ccc", pb: 1 }}>
+  <Grid item xs={1}></Grid>
+
+  <Grid item xs={2}>
+    <Typography variant="subtitle2" sx={{ pl: 1 }}>Batch</Typography>
+  </Grid>
+
+  <Grid item xs={2}>
+    <Typography variant="subtitle2" sx={{ pl: 1 }}>Phase</Typography>
+  </Grid>
+
+  <Grid item xs={3}>
+    <Typography variant="subtitle2" sx={{ pl: 1 }}>Timestamp</Typography>
+  </Grid>
+
+
+  {/* ROWS */}
+  {summaryOutlierRows.length > 0 ? (
+    summaryOutlierRows.map((row, idx) => {
+
+          <Grid
+            container
+            sx={{
+              py: 1,
+              borderBottom: "1px solid #eee",
+              alignItems: "center"
+            }}
+          >
+            {/* Checkbox */}
+            <Grid item xs={1}>
+              <Checkbox
+                size="small"
+                checked={selectedSummaryOutlierRows.includes(row.id)}
+                onChange={() => handleSummaryOutlierRowToggle(row.id)}
+              />
+            </Grid>
+
+            <Grid item xs={2}>
+          <Typography variant="body2" sx={{ pl: 1 }}>{row.batch}</Typography>
+        </Grid>
+
+        <Grid item xs={2}>
+          <Typography variant="body2" sx={{ pl: 1 }}>{row.phase || "-"}</Typography>
+        </Grid>
+
+        <Grid item xs={3}>
+          <Typography variant="body2" sx={{ pl: 1, whiteSpace: "nowrap" }}>
+            {row.timestamp}
+          </Typography>
+        </Grid>
+          </Grid>
+      ;
+    })
+  ) : (
+    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+      No summarized rows found.
+    </Typography>
+  )}
+</Grid>
+
 
                 {/* Treatment Method */}
                 <Grid item xs={4}>
@@ -2029,10 +2250,11 @@ const handleSelectAllSummaryRows = () => {
                     <MenuItem value="Forward fill">Forward Fill</MenuItem>
                     <MenuItem value="Backward fill">Backward Fill</MenuItem>
                     <MenuItem value="Delete rows">Delete rows</MenuItem>
+                    <MenuItem value="Delete batch">Delete batch</MenuItem>
                   </Select>
 
                   <Button variant="contained" size="small" sx={{ mt: 2 }} onClick={applyOutlierTreatment}>
-                    Apply Treatment
+                    Apply Outlier Treatment
                   </Button>
                 </Grid>
               </Grid>
