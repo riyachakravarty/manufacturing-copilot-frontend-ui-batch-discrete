@@ -400,33 +400,6 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
 
 
 
-  // Auto-load utlier intervals when a column is selected in outlier treatment
-  useEffect(() => {
-    if (outlierSelectedColumns && outlierMethod && outlierTreatmentType) {
-      const fetchIntervals = async () => {
-        try {
-          const res = await fetch(
-            `${BACKEND_URL}/outlier_intervals?column=${encodeURIComponent(outlierSelectedColumns)}&method=${encodeURIComponent(outlierMethod)}
-            &TreatmentType=${encodeURIComponent(outlierTreatmentType)}`
-          );
-          if (!res.ok) throw new Error("Failed to fetch outlier intervals");
-          const data = await res.json();
-          if (data.intervals) {
-            setOutlierIntervals(data.intervals || []);
-          }
-        } catch (err) {
-          console.error("Error loading outlier intervals:", err);
-          setOutlierIntervals([]);
-        }
-      };
-      fetchIntervals();
-    } else {
-      setOutlierIntervals([]);
-      setOutlierSelectedIntervals([]);
-    }
-  }, [outlierSelectedColumns,outlierMethod, outlierTreatmentType]);
-
-
   //Auto populate phases for outlier analysis when "phasewise" is selected
   useEffect(() => {
   if (outlierAnalysisType === "phasewise") {
@@ -450,66 +423,61 @@ const updateCondition = (phaseIndex, section, condIndex, field, value) => {
 // Auto-load timestamps when a column for outlier treatment is selected
 
   useEffect(() => {
-    // Phasewise requires a selected phase
-    const isPhaseRequired =
-      outlierTreatmentType === "phasewise" && !outlierPhase;
+  const isPhaseRequired =
+    outlierTreatmentType === "phasewise" && !outlierPhase;
 
-    if (
-      outlierSelectedColumns &&
-      outlierMethod &&
-      outlierTreatmentType &&
-      !isPhaseRequired
-    ) {
-      const fetchOutlierSummaryTable = async () => {
-        try {
-          const payload = {
-            column: outlierSelectedColumns,
-            method: outlierMethod,
-            analysis_type: outlierTreatmentType,
-            phase: outlierTreatmentType === "phasewise" ? outlierPhase : null
-          };
+  if (
+    outlierSelectedColumns &&
+    outlierMethod &&
+    outlierTreatmentType &&
+    !isPhaseRequired
+  ) {
+    const fetchOutlierSummaryTable = async () => {
+      try {
+        const query = new URLSearchParams({
+          column: outlierSelectedColumns,
+          method: outlierMethod,
+          analysis_type: outlierTreatmentType,
+          phase: outlierTreatmentType === "phasewise" ? outlierPhase : "",
+        }).toString();
 
-          const res = await fetch(`${BACKEND_URL}/outlier_intervals_summary`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
+        const res = await fetch(`${BACKEND_URL}/outlier_intervals_summary?${query}`);
 
-          if (!res.ok) throw new Error("Failed to fetch outlier summary table");
+        if (!res.ok) throw new Error("Failed to fetch outlier summary table");
 
-          const data = await res.json();
+        const data = await res.json();
 
-          if (data.table) {
-            setSummaryOutlierRows(
-              data.table.map((r) => ({
-                id: r.Row_ID,
-                batch: r.Batch_No,
-                phase: r.Phase_Name,
-                timestamp: r.Timestamp,
-                counter: r.Counter
-              }))
-            );
-          } else {
-            setSummaryOutlierRows([]);
-          }
-        } catch (err) {
-          console.error("Error loading outlier summary rows:", err);
+        if (data.table) {
+          setSummaryOutlierRows(
+            data.table.map((r) => ({
+              id: r.Row_ID,
+              batch: r.Batch_No,
+              phase: r.Phase_Name,
+              timestamp: r.Timestamp,
+              counter: r.Counter,
+            }))
+          );
+        } else {
           setSummaryOutlierRows([]);
         }
-      };
+      } catch (err) {
+        console.error("Error loading outlier summary rows:", err);
+        setSummaryOutlierRows([]);
+      }
+    };
 
-      fetchOutlierSummaryTable();
-    } else {
-      // reset when selection incomplete
-      setSummaryOutlierRows([]);
-      setSelectedOutlierSummaryRows([]);
-    }
-  }, [
-    outlierSelectedColumns,
-    outlierMethod,
-    outlierTreatmentType,
-    outlierPhase
-  ]);
+    fetchOutlierSummaryTable();
+  } else {
+    setSummaryOutlierRows([]);
+    setSelectedOutlierSummaryRows([]);
+  }
+}, [
+  outlierSelectedColumns,
+  outlierMethod,
+  outlierTreatmentType,
+  outlierPhase
+]);
+
 
 
 
