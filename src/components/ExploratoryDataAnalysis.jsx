@@ -357,7 +357,7 @@ const generatemultivariateanalysis = async () => {
           <Select
             value={targetColumn}
             label="Cycle Time"
-            onChange={(e) => setTarget(e.target.value)}
+            onChange={(e) => setTargetColumn(e.target.value)}
           >
             <MenuItem value="BCT">BCT</MenuItem>
 
