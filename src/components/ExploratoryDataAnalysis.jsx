@@ -34,7 +34,7 @@ import { DataGridPro } from '@mui/x-data-grid-pro';
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTheme } from "@mui/material/styles";
 
-const BACKEND_URL = "https://manufacturing-copilot-backend.onrender.com";
+const BACKEND_URL = "https://manufacturing-copilot-backend-batch.onrender.com";
 
 const ExploratoryDataAnalysis = () => {
   const [edaColumns, setEdaColumns] = useState([]);
