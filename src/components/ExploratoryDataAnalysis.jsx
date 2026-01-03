@@ -46,9 +46,8 @@ const ExploratoryDataAnalysis = () => {
   const theme = useTheme();
   const [error, setError] = useState("");
 
-  // Q-cut state
-  const [selectedQcutColumns, setSelectedQcutColumns] = useState([]);
-  const [qcutQuantiles, setQcutQuantiles] = useState(4);
+  // Target columns for phase durations
+  const [availablePhases, setAvailablePhases] = useState([]);
   
 
   // Dual Axes Box Plots
@@ -92,6 +91,26 @@ const ExploratoryDataAnalysis = () => {
   }, 
 //  [BACKEND_URL]
 );
+
+//Auto populate phases for target column to show phase durations
+  useEffect(() => {
+    const fetchPhases = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/get_phases`);
+        
+        if (response.data?.phases) {
+          setAvailablePhases(response.data.phases);
+        } else {
+          console.warn("No phases found in response");
+        }
+
+      } catch (error) {
+        console.error("Error fetching phases:", error);
+      }
+    };
+
+  fetchPhases();
+}, []);   // Empty dependency = runs only once when EDA mounts
 
   // Card toggle
   const handleAccordionChange = (panel) => (event, isExpanded) => {
@@ -328,6 +347,27 @@ const generatemultivariateanalysis = async () => {
                 ))}
               </Select>
             </FormControl>
+
+          {/* Cycle Time Dropdown */}
+        <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+          <InputLabel>Cycle Time</InputLabel>
+          <Select
+            value={targetColumn}
+            label="Cycle Time"
+            onChange={(e) => setTarget(e.target.value)}
+          >
+            <MenuItem value="BCT">BCT</MenuItem>
+
+            {availablePhases?.map((p) => (
+              <MenuItem
+                key={p}
+                value={`${p} Duration`}
+              >
+                {`${p} Duration`}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
             {/* Performance Direction Toggle */}
             <ToggleButtonGroup

@@ -756,7 +756,7 @@ const handleSelectAllOutlierSummaryRows = () => {
       alert(data.message || "No outliers found.");
     }
   } catch (err) {
-    console.error("OError running outlier analysis:", err.message);
+    console.error("Error running outlier analysis:", err.message);
   }
 };
 
