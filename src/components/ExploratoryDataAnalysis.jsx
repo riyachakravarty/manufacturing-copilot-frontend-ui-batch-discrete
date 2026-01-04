@@ -46,9 +46,12 @@ const ExploratoryDataAnalysis = () => {
   const theme = useTheme();
   const [error, setError] = useState("");
 
-  // Q-cut state
-  const [selectedQcutColumns, setSelectedQcutColumns] = useState([]);
-  const [qcutQuantiles, setQcutQuantiles] = useState(4);
+  // Sensor Overlays
+  const [numRanges, setNumRanges] = useState();
+  const [selectedSensorColumns, setSelectedSensorColumns] = useState([]);
+  const [aggregationMethod, setAggregationMethod] = useState("Mean");
+  const [displayMode, setDisplayMode] = useState("Batch");
+  
 
   // Target columns for phase durations
   const [availablePhases, setAvailablePhases] = useState([]);
@@ -121,19 +124,37 @@ const ExploratoryDataAnalysis = () => {
   };
 
   // Function to call backend and fetch Q-cut box plots
-const generateQcutBoxPlots = async () => {
+  const generateSensorOverlays = async () => {
   setLoading(true);
   setError("");
+
   try {
-    if (!targetColumn || selectedQcutColumns.length === 0) {
-      console.error("Target or columns not selected for Q-cut analysis");
+    if (
+      !targetColumn ||
+      selectedSensorColumns.length === 0 ||
+      !numRanges ||
+      !performanceDirection
+    ) {
+      console.error("Missing required inputs for Sensor Overlays");
       return;
     }
 
-    const res = await fetch(`${BACKEND_URL}/eda/qcut_boxplot?target=${targetColumn}&quantiles=${qcutQuantiles}`, {
+    // Payload to backend
+    const payload = {
+      target: targetColumn,
+      sensors: selectedSensorColumns,
+      num_ranges: numRanges,               // number OR {good, bad}
+      performance_direction: performanceDirection,  // "higher" or "lower"
+      display_mode: displayMode,
+      aggregation: aggregationMethod
+    };
+
+    console.log("Sending payload:", payload);
+
+    const res = await fetch(`${BACKEND_URL}/eda/sensor_overlays`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(selectedQcutColumns),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
@@ -143,19 +164,21 @@ const generateQcutBoxPlots = async () => {
     }
 
     const result = await res.json();
-    console.log("Q-cut plot response:", result);
+    console.log("Sensor Overlays Response:", result);
 
-    // 🔑 Example: if backend returns {"type": "plot", "data": ...}
     if (result.type === "plot") {
       setEdaOutput({
         data: result.data,
-        //layout: data.layout,
       });
     }
   } catch (err) {
-    console.error("Error generating Q-cut box plots:", err);
+    console.error("Error generating Sensor Overlays:", err);
+  } finally {
+    setLoading(false);
   }
 };
+
+
 
 // Function to call backend and fetch Dual Axes box plots
 const generateDualAxesBoxPlots = async () => {
@@ -384,14 +407,14 @@ const generatemultivariateanalysis = async () => {
               <ToggleButton value="lower">Lower the better</ToggleButton>
             </ToggleButtonGroup>
 
-            {/* Specialized Q-cut Box Plots */}
+            {/* Sensor Overlays */}
             <Accordion
-              expanded={expandedCard === "qcut"}
-              onChange={handleAccordionChange("qcut")}
+              expanded={expandedCard === "overlays"}
+              onChange={handleAccordionChange("overlays")}
             >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-                  Specialized Q-cut Box Plots
+                  Specialized Sensor Overlay Plots
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>
@@ -401,9 +424,9 @@ const generatemultivariateanalysis = async () => {
                     control={
                       <Checkbox
                         size="small"
-                        checked={selectedQcutColumns.length === edaColumns.length}
+                        checked={selectedSensorColumns.length === edaColumns.length}
                         onChange={(e) => 
-                          setSelectedQcutColumns(
+                          setSelectedSensorColumns(
                             e.target.checked ? edaColumns : []
                           )
                         }
@@ -416,12 +439,12 @@ const generatemultivariateanalysis = async () => {
                       key={col}
                       control={
                         <Checkbox
-                          checked={selectedQcutColumns.includes(col)}
+                          checked={selectedSensorColumns.includes(col)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedQcutColumns([...selectedQcutColumns, col]);
+                              setSelectedSensorColumns([...selectedSensorColumns, col]);
                             } else {
-                              setSelectedQcutColumns(selectedQcutColumns.filter((c) => c !== col));
+                              setSelectedSensorColumns(selectedSensorColumns.filter((c) => c !== col));
                             }
                           }
                           }
@@ -432,18 +455,57 @@ const generatemultivariateanalysis = async () => {
                   ))}
                 </FormGroup>
 
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Number of quantiles for Target"
-                  type="number"
-                  value={qcutQuantiles}
-                  onChange={(e) => setQcutQuantiles(e.target.value)}
-                  sx={{ mt: 2 }}
-                />
+                {/* Show input field for number of top and bottom ranges */}
+                  <Box sx={{ mt: 2 }}>
+                    <TextField
+                      label="% of top vs bottom ranges"
+                      type="number"
+                      size="small"
+                      value={numRanges}
+                      onChange={(e) => setNumRanges(Number(e.target.value))}
+                      InputProps={{ inputProps: { min: 1 } }}
+                    />
+                  </Box>
+
+                  <Grid item xs={4}>
+          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
+            Aggregation Method
+          </Typography>
+          <Select
+            size="small"
+            value={aggregationMethod}
+            onChange={(e) => setAggregationMethod(e.target.value)}
+            fullWidth
+            sx={{ mt: 1 }}
+          >
+            <MenuItem value="Mean">Mean</MenuItem>
+            <MenuItem value="Median">Median</MenuItem>
+          </Select>
+          </Grid>
+
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+          <InputLabel>Display Mode</InputLabel>
+          <Select
+            value={displayMode}
+            label="Display Mode"
+            onChange={(e) => setDisplayMode(e.target.value)}
+          >
+            <MenuItem value="Batch">Batch</MenuItem>
+
+            {availablePhases?.map((p) => (
+              <MenuItem
+                key={p}
+                value={p}
+              >
+                {p}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
                 <Button variant="contained" size="small" sx={{ mt: 2 }}
-                onClick={generateQcutBoxPlots}>
-      Generate Q-cut Analysis
+                onClick={generateSensorOverlays}>
+      Generate Sensor Overlays
                 </Button>
               </AccordionDetails>
             </Accordion>
