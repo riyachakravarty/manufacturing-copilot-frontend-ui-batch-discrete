@@ -145,8 +145,8 @@ const ExploratoryDataAnalysis = () => {
       sensors: selectedSensorColumns,
       num_ranges: numRanges,               // number OR {good, bad}
       performance_direction: performanceDirection,  // "higher" or "lower"
-      display_mode: displayMode,
-      aggregation: aggregationMethod
+      aggregation: aggregationMethod,
+      display_mode: displayMode
     };
 
     console.log("Sending payload:", payload);
