@@ -95,9 +95,8 @@ const ExploratoryDataAnalysis = () => {
     };
 
     fetchColumns();
-  }, 
-//  [BACKEND_URL]
-);
+
+}, []);   // ✅ FIXED: runs ONCE
 
 //Auto populate phases for target column to show phase durations
   useEffect(() => {
