@@ -304,7 +304,7 @@ const generateContRangeAnalysis = async () => {
 const generatemultivariateanalysis = async () => {
   try{  
   const res = await fetch(
-      `${process.env.REACT_APP_BACKEND_URL}/eda/multivariate`,
+      `${process.env.BACKEND_URL}/eda/multivariate`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
