@@ -79,7 +79,7 @@ const ExploratoryDataAnalysis = () => {
   // Multivariate Analysis
   const [selectedMultiColumns, setSelectedMultiColumns] = useState([]);
   const [multiMode, setMultiMode] = useState("Boxplot");
-  const [numMultiRanges, setnumMultiRanges] = useState(10); // default top and bottom ranges
+  const [numMultiRanges, setNumMultiRanges] = useState(10); // default top and bottom ranges
   const [multiDisplayMode, setMultiDisplayMode] = useState("Batch");
 
 
