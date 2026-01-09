@@ -79,7 +79,9 @@ const ExploratoryDataAnalysis = () => {
   // Multivariate Analysis
   const [selectedMultiColumns, setSelectedMultiColumns] = useState([]);
   const [multiMode, setMultiMode] = useState("Boxplot");
-  const [numMultiRanges, setnumMultiRanges] = useState(5); // default top and bottom ranges
+  const [numMultiRanges, setnumMultiRanges] = useState(10); // default top and bottom ranges
+  const [multiDisplayMode, setMultiDisplayMode] = useState("Batch");
+
 
   // Fetch column names from backend
   useEffect(() => {
@@ -311,7 +313,8 @@ const generatemultivariateanalysis = async () => {
           target: targetColumn,   // from dropdown / radio
           columns: selectedMultiColumns,
           numMultiRanges: numMultiRanges,
-          performanceDirection: performanceDirection
+          performanceDirection: performanceDirection,
+          display_mode: multiDisplayMode
         }),
       }
     );
@@ -482,8 +485,10 @@ const generatemultivariateanalysis = async () => {
           </Select>
           </Grid>
 
-          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-          <InputLabel>Display Mode</InputLabel>
+          <Grid item xs={4}>
+          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
+            Display Mode
+          </Typography>
           <Select
             value={displayMode}
             label="Display Mode"
@@ -500,7 +505,7 @@ const generatemultivariateanalysis = async () => {
               </MenuItem>
             ))}
           </Select>
-        </FormControl>
+        </Grid>
 
                 <Button variant="contained" size="small" sx={{ mt: 2 }}
                 onClick={generateSensorOverlays}>
@@ -811,17 +816,39 @@ const generatemultivariateanalysis = async () => {
                   />
                 </RadioGroup>
 
-                {/* Show input field for number of top and bottom ranges */}
+               {/* Show input field for number of top and bottom ranges */}
                   <Box sx={{ mt: 2 }}>
                     <TextField
-                      label="Number of top vs bottom ranges"
+                      label="% of top vs bottom ranges"
                       type="number"
                       size="small"
                       value={numMultiRanges}
-                      onChange={(e) => setnumMultiRanges(Number(e.target.value))}
+                      onChange={(e) => setNumMultiRanges(Number(e.target.value))}
                       InputProps={{ inputProps: { min: 1 } }}
                     />
                   </Box>
+
+                   <Grid item xs={4}>
+          <Typography variant="caption" sx={{ fontWeight: "bold" }}>
+            Display Mode
+          </Typography>
+          <Select
+            value={multiDisplayMode}
+            label="Display Mode"
+            onChange={(e) => setMultiDisplayMode(e.target.value)}
+          >
+            <MenuItem value="Batch">Batch</MenuItem>
+
+            {availablePhases?.map((p) => (
+              <MenuItem
+                key={p}
+                value={p}
+              >
+                {p}
+              </MenuItem>
+            ))}
+          </Select>
+        </Grid>
 
                 <Button variant="contained" size="small" sx={{ mt: 2 }}
                   onClick={generatemultivariateanalysis}>
